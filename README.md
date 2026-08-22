@@ -25,3 +25,18 @@ Conversational weather assistant using Open-Meteo for weather data and Google Ge
 Import the repository into Vercel, set `GEMINI_API_KEY` in the project Environment Variables, and deploy. The free Gemini API has rate limits, so production use should add rate limiting before sharing the app publicly.
 
 `GEMINI_MODEL` defaults to `gemini-2.5-flash`; change it only to a model available to your Google AI Studio project.
+
+## Directory layout
+
+The Vercel project root must be this directory. Keep the static files and server folders at the same level:
+
+```text
+index.html
+script.js
+style.css
+api/
+lib/
+package.json
+```
+
+If Vercel is configured from the parent `WeatherGPT` folder, set **Root Directory** to the nested folder that contains `package.json`.
