@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WeatherGPT — Ask the weather anything.</title>
+  <meta name="description" content="AI-powered conversational weather assistant grounded in real Open-Meteo data." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="site-header">
+      <div class="brand">
+        <span class="brand-logo">⛅</span>
+        <div>
+          <h1>WeatherGPT</h1>
+          <p class="tagline">Ask the weather anything.</p>
+        </div>
+      </div>
+      <form id="search-form" class="search-form" autocomplete="off">
+        <input id="city-input" type="text" placeholder="Enter city..." aria-label="City name" />
+        <button type="submit">Search</button>
+        <button type="button" id="geolocate-btn" title="Use my location" aria-label="Use my location">📍</button>
+      </form>
+    </header>
+
+    <main>
+      <section id="weather-section" class="hidden">
+        <div class="card current-weather">
+          <div class="location-info">
+            <h2 id="location-name">--</h2>
+            <span id="country"></span>
+          </div>
+
+          <div class="current-main">
+            <div class="temp-block">
+              <span id="current-temp">--</span><span>°C</span>
+            </div>
+            <div id="current-icon" class="weather-icon">--</div>
+            <div class="condition">
+              <p id="current-desc">--</p>
+              <p>Feels like <span id="feels-like">--</span>°C</p>
+            </div>
+          </div>
+
+          <div class="details-grid">
+            <div class="detail-item"><div class="detail-label">Humidity</div><div id="humidity">--</div></div>
+            <div class="detail-item"><div class="detail-label">Wind speed</div><div id="wind">--</div></div>
+            <div class="detail-item"><div class="detail-label">Wind direction</div><div id="wind-dir">--</div></div>
+            <div class="detail-item"><div class="detail-label">Precipitation</div><div id="precip">--</div></div>
+            <div class="detail-item"><div class="detail-label">Rain</div><div id="rain">--</div></div>
+            <div class="detail-item"><div class="detail-label">Sunrise</div><div id="sunrise">--</div></div>
+            <div class="detail-item"><div class="detail-label">Sunset</div><div id="sunset">--</div></div>
+          </div>
+        </div>
+
+        <section class="card">
+          <h3>Hourly forecast</h3>
+          <div id="hourly-container" class="hourly-scroll"></div>
+        </section>
+
+        <section class="card">
+          <h3>7-day forecast</h3>
+          <div id="daily-container" class="daily-grid"></div>
+        </section>
+
+        <section class="card">
+          <h3>Weather charts</h3>
+          <div class="charts-grid">
+            <div class="chart-box"><canvas id="temp-chart"></canvas></div>
+            <div class="chart-box"><canvas id="precip-chart"></canvas></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="card chat-card">
+        <h2>Ask WeatherGPT</h2>
+        <div id="chat-history" class="chat-history"></div>
+
+        <div id="suggested-questions" class="suggested">
+          <button class="suggested-question" data-question="Will it rain tomorrow?">Will it rain tomorrow?</button>
+          <button class="suggested-question" data-question="When will it be coolest today?">When will it be coolest today?</button>
+          <button class="suggested-question" data-question="Should I carry an umbrella?">Should I carry an umbrella?</button>
+          <button class="suggested-question" data-question="What's the weather like this weekend?">What's the weather like this weekend?</button>
+          <button class="suggested-question" data-question="Is tomorrow hotter than today?">Is tomorrow hotter than today?</button>
+        </div>
+
+        <form id="chat-form" class="chat-form">
+          <input id="chat-input" type="text" placeholder="Ask about weather..." autocomplete="off" aria-label="Chat input" />
+          <button type="submit">Send</button>
+        </form>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>Weather data by Open-Meteo. AI by Google Gemini.</p>
+    </footer>
+  </div>
+
+  <div id="loading-overlay" class="loading-overlay hidden"><div class="spinner"></div></div>
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+  <script src="/script.js" defer></script>
+</body>
+</html>

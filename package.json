@@ -1,0 +1,16 @@
+{
+  "name": "weathergpt",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-powered conversational weather platform",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "devDependencies": {
+    "vercel": "^48.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
