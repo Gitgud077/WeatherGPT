@@ -10,7 +10,7 @@ module.exports = async function handler(req, res) {
   }
 
   const url = new URL(req.url, 'http://localhost');
-  const city = url.searchParams.get('city');
+  const city = (req.query && req.query.city) || url.searchParams.get('city');
 
   if (!city || city.trim().length < 2) {
     return sendJson(res, 400, {

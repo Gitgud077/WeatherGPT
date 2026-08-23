@@ -14,6 +14,8 @@ let precipChart = null;
 
 const $ = (id) => document.getElementById(id);
 
+let isChatSubmitting = false;
+
 document.addEventListener('DOMContentLoaded', () => {
   // Hide geolocate button if unsupported
   if (!navigator.geolocation) {
@@ -31,6 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
       onChatSubmit(new Event('submit', { cancelable: true }));
     });
   });
+
+  // Welcome message in chat
+  addChatMessage('ai', '👋 Hello! I am WeatherGPT. Search for any city or ask me questions about the weather, forecasts, or clothing recommendations.');
+
+  // Load a default popular city on initial visit so the dashboard is immediately active
+  searchLocation('London');
 });
 
 /* ---------- Location handling ---------- */
@@ -156,16 +164,24 @@ function renderHourlyForecast(hourly) {
   const container = $('hourly-container');
   container.innerHTML = '';
 
-  const count = Math.min(hourly.time.length, 24);
+  const currentHourStr = state.current?.time ? state.current.time.slice(0, 13) : null;
+  let startIdx = 0;
+  if (currentHourStr && hourly.time) {
+    const found = hourly.time.findIndex((t) => t >= currentHourStr);
+    if (found !== -1) startIdx = found;
+  }
+
+  const count = Math.min(hourly.time.length - startIdx, 24);
 
   for (let i = 0; i < count; i++) {
+    const sourceIdx = startIdx + i;
     const item = document.createElement('div');
     item.className = 'hour-item';
 
-    const icon = getWeatherIcon(hourly.weatherCode[i], true);
-    const time = formatHour(hourly.time[i]);
-    const temp = Math.round(hourly.temperature[i]);
-    const precip = Math.round(hourly.precipitationProbability[i]);
+    const icon = getWeatherIcon(hourly.weatherCode[sourceIdx], true);
+    const time = formatHour(hourly.time[sourceIdx]);
+    const temp = Math.round(hourly.temperature[sourceIdx]);
+    const precip = Math.round(hourly.precipitationProbability[sourceIdx]);
 
     item.innerHTML = `
       <span class="hour-time">${time}</span>
@@ -214,9 +230,16 @@ function renderCharts(forecast) {
     return;
   }
 
-  const hourlyLabels = forecast.hourly.time.slice(0, 48).map(formatHour);
-  const hourlyTemps = forecast.hourly.temperature.slice(0, 48);
-  const hourlyPrecip = forecast.hourly.precipitationProbability.slice(0, 48);
+  const currentHourStr = state.current?.time ? state.current.time.slice(0, 13) : null;
+  let startIdx = 0;
+  if (currentHourStr && forecast.hourly.time) {
+    const found = forecast.hourly.time.findIndex((t) => t >= currentHourStr);
+    if (found !== -1) startIdx = found;
+  }
+
+  const hourlyLabels = forecast.hourly.time.slice(startIdx, startIdx + 36).map(formatHour);
+  const hourlyTemps = forecast.hourly.temperature.slice(startIdx, startIdx + 36);
+  const hourlyPrecip = forecast.hourly.precipitationProbability.slice(startIdx, startIdx + 36);
 
   const tempCtx = $('temp-chart').getContext('2d');
   const precipCtx = $('precip-chart').getContext('2d');
@@ -297,7 +320,10 @@ function renderCharts(forecast) {
 
 async function onChatSubmit(event) {
   event.preventDefault();
+  if (isChatSubmitting) return;
+
   const input = $('chat-input');
+  const submitBtn = $('chat-form').querySelector('button[type="submit"]');
   const message = input.value.trim();
 
   if (!message) return;
@@ -305,6 +331,10 @@ async function onChatSubmit(event) {
     showToast('Please search for a city first.');
     return;
   }
+
+  isChatSubmitting = true;
+  if (submitBtn) submitBtn.disabled = true;
+  input.disabled = true;
 
   // Add user message
   addChatMessage('user', message);
@@ -327,6 +357,7 @@ async function onChatSubmit(event) {
         message,
         location: {
           name: state.location.name,
+          country: state.location.country,
           latitude: state.location.latitude,
           longitude: state.location.longitude,
           timezone: state.location.timezone
@@ -354,6 +385,11 @@ async function onChatSubmit(event) {
     removeTypingIndicator();
     addChatMessage('ai', error.message || 'WeatherGPT is having trouble responding right now.');
     showToast(error.message || 'WeatherGPT is having trouble responding right now.');
+  } finally {
+    isChatSubmitting = false;
+    if (submitBtn) submitBtn.disabled = false;
+    input.disabled = false;
+    input.focus();
   }
 }
 

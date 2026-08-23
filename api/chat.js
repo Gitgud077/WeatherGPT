@@ -14,6 +14,17 @@ You can give practical suggestions like carrying an umbrella, but do not provide
 Be concise, warm, and helpful. Use Celsius by default.`;
 
 async function readJsonBody(req) {
+  if (req.body) {
+    if (typeof req.body === 'object') return req.body;
+    if (typeof req.body === 'string') {
+      try {
+        return JSON.parse(req.body);
+      } catch (err) {
+        throw new Error('Invalid JSON string in body');
+      }
+    }
+  }
+
   let body = '';
   for await (const chunk of req) {
     body += chunk;
@@ -26,48 +37,53 @@ async function readJsonBody(req) {
 }
 
 function buildWeatherContext(location, current, forecast) {
-  const daily = forecast.daily;
+  const daily = forecast.daily || {};
+  const dailyDates = daily.date || [];
   const todayDate = current.time ? current.time.slice(0, 10) : null;
 
-  const next7Days = daily.date.slice(0, 7).map((date, i) => ({
+  const next7Days = dailyDates.slice(0, 7).map((date, i) => ({
     date,
-    weather: mapWeatherCode(daily.weatherCode[i]),
-    maxTemperature: daily.maxTemperature[i],
-    minTemperature: daily.minTemperature[i],
-    precipitationProbability: daily.precipitationProbability[i],
-    rain: daily.rain[i],
-    sunrise: daily.sunrise[i] || null,
-    sunset: daily.sunset[i] || null
+    weather: mapWeatherCode(daily.weatherCode?.[i]),
+    maxTemperature: daily.maxTemperature?.[i],
+    minTemperature: daily.minTemperature?.[i],
+    precipitationProbability: daily.precipitationProbability?.[i],
+    rain: daily.rain?.[i],
+    sunrise: daily.sunrise?.[i] || null,
+    sunset: daily.sunset?.[i] || null
   }));
 
   let today = null;
   let tomorrow = null;
 
   if (todayDate) {
-    const index = daily.date.indexOf(todayDate);
+    const index = dailyDates.indexOf(todayDate);
     if (index !== -1) today = next7Days[index];
     if (index !== -1 && index + 1 < next7Days.length) {
       tomorrow = next7Days[index + 1];
     }
   }
 
-  const currentHour = forecast.hourly.time.findIndex((time) => time >= current.time?.slice(0, 13));
-  const firstHour = currentHour >= 0 ? currentHour : 0;
-  const next24Hours = forecast.hourly.time
+  const hourlyTimes = forecast.hourly?.time || [];
+  const currentHourPrefix = current.time ? current.time.slice(0, 13) : '';
+  const foundHourIndex = hourlyTimes.findIndex((time) => time >= currentHourPrefix);
+  const firstHour = foundHourIndex >= 0 ? foundHourIndex : 0;
+
+  const next24Hours = hourlyTimes
     .slice(firstHour, firstHour + 24)
     .map((time, i) => {
       const sourceIndex = firstHour + i;
       return {
         time: time.slice(11, 16),
-        temperature: forecast.hourly.temperature[sourceIndex],
-        precipitationProbability: forecast.hourly.precipitationProbability[sourceIndex],
-        weather: mapWeatherCode(forecast.hourly.weatherCode[sourceIndex])
+        temperature: forecast.hourly?.temperature?.[sourceIndex],
+        precipitationProbability: forecast.hourly?.precipitationProbability?.[sourceIndex],
+        weather: mapWeatherCode(forecast.hourly?.weatherCode?.[sourceIndex])
       };
     });
 
   return {
     location: {
       name: location.name,
+      country: location.country || '',
       latitude: location.latitude,
       longitude: location.longitude,
       timezone: current.timezone || location.timezone || 'auto'
@@ -96,52 +112,84 @@ function buildWeatherContext(location, current, forecast) {
 }
 
 async function callGemini(apiKey, userMessage, conversation, weatherContext) {
-  const contents = [
-    ...conversation.map((entry) => ({
-      role: entry.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: entry.content }]
-    })),
-    { role: 'user', parts: [{ text: userMessage }] }
-  ];
+  // Build sanitized conversation history with alternating roles
+  const contents = [];
+  let lastRole = null;
 
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
-    {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey
-    },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{
-          text: `${SYSTEM_PROMPT}\n\nWeather data (source of truth):\n${JSON.stringify(weatherContext, null, 2)}`
-        }]
-      },
-      contents,
-      generationConfig: { temperature: 0.4 }
-    })
+  for (const entry of conversation) {
+    const role = entry.role === 'assistant' ? 'model' : 'user';
+    const text = String(entry.content || '').trim();
+    if (!text) continue;
+
+    if (role === lastRole && contents.length > 0) {
+      contents[contents.length - 1].parts[0].text += `\n${text}`;
+    } else {
+      contents.push({ role, parts: [{ text }] });
+      lastRole = role;
     }
+  }
+
+  // Ensure last message is from user
+  if (lastRole === 'user') {
+    contents[contents.length - 1].parts[0].text += `\n${userMessage}`;
+  } else {
+    contents.push({ role: 'user', parts: [{ text: userMessage }] });
+  }
+
+  const primaryModel = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+  const fallbackModels = [primaryModel, 'gemini-3.7-flash', 'gemini-flash-latest'].filter(
+    (m, idx, arr) => arr.indexOf(m) === idx
   );
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Gemini API error:', response.status, errorText);
-    throw new Error('Gemini request failed');
+  let lastError = null;
+
+  for (const model of fallbackModels) {
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [{
+                text: `${SYSTEM_PROMPT}\n\nWeather data (source of truth):\n${JSON.stringify(weatherContext, null, 2)}`
+              }]
+            },
+            contents,
+            generationConfig: { temperature: 0.4 }
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.warn(`Gemini API error on model ${model}:`, response.status, errorText);
+        lastError = new Error(`Gemini request failed (${response.status})`);
+        continue;
+      }
+
+      const data = await response.json();
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      const answer = parts
+        .filter((part) => !part.thought && part.text)
+        .map((part) => part.text)
+        .join('')
+        .trim();
+
+      if (answer) {
+        return answer;
+      }
+    } catch (err) {
+      console.warn(`Gemini call error on model ${model}:`, err.message);
+      lastError = err;
+    }
   }
 
-  const data = await response.json();
-  const answer = data.candidates?.[0]?.content?.parts
-    ?.map((part) => part.text || '')
-    .join('')
-    .trim();
-
-  if (!answer) {
-    throw new Error('Gemini returned an empty response');
-  }
-
-  return answer;
+  throw lastError || new Error('Gemini returned an empty response');
 }
 
 module.exports = async function handler(req, res) {
@@ -198,7 +246,7 @@ module.exports = async function handler(req, res) {
   if (!apiKey) {
     return sendJson(res, 500, {
       success: false,
-      error: 'WeatherGPT is having trouble responding right now.'
+      error: 'WeatherGPT is not configured with a Gemini API key.'
     });
   }
 
@@ -211,10 +259,10 @@ module.exports = async function handler(req, res) {
 
     return sendJson(res, 200, { success: true, answer });
   } catch (error) {
-    console.error('Chat error:', error);
+    console.error('Chat handler error:', error);
     return sendJson(res, 502, {
       success: false,
-      error: 'WeatherGPT is having trouble responding right now.'
+      error: 'WeatherGPT is having trouble responding right now. Please try again shortly.'
     });
   }
 };

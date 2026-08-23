@@ -10,8 +10,8 @@ module.exports = async function handler(req, res) {
   }
 
   const url = new URL(req.url, 'http://localhost');
-  const lat = url.searchParams.get('lat');
-  const lon = url.searchParams.get('lon');
+  const lat = (req.query && req.query.lat) || url.searchParams.get('lat');
+  const lon = (req.query && req.query.lon) || url.searchParams.get('lon');
 
   const coordinates = validateCoordinates(lat, lon);
 
