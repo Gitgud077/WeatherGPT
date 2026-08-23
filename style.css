@@ -1,14 +1,131 @@
 :root {
-  --bg: #0b1220;
-  --surface: rgba(255, 255, 255, 0.06);
-  --surface-strong: rgba(255, 255, 255, 0.10);
-  --border: rgba(255, 255, 255, 0.12);
-  --text: #f2f5f9;
-  --text-muted: #9aa7b8;
-  --accent: #4ea1ff;
-  --accent-2: #65d6ff;
+  --bg: #0369a1;
+  --bg-gradient: linear-gradient(160deg, #0284c7 0%, #0369a1 35%, #075985 70%, #0c4a6e 90%, #082f49 100%);
+  --ambient-glow: radial-gradient(circle at 80% 10%, rgba(254, 240, 138, 0.45) 0%, rgba(251, 191, 36, 0.2) 35%, rgba(56, 189, 248, 0.15) 60%, transparent 80%);
+  
+  /* Glass Hierarchy */
+  --surface-hero: rgba(255, 255, 255, 0.18);
+  --border-hero: rgba(255, 255, 255, 0.30);
+  --glow-hero: rgba(254, 240, 138, 0.5);
+
+  --surface-secondary: rgba(255, 255, 255, 0.10);
+  --border-secondary: rgba(255, 255, 255, 0.16);
+
+  --surface-tile: rgba(255, 255, 255, 0.06);
+  --border-tile: rgba(255, 255, 255, 0.09);
+
+  --text: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.78);
+  --accent: #fbbf24;
+  --accent-2: #f59e0b;
   --danger: #ff6b6b;
-  --radius: 20px;
+  --radius: 24px;
+}
+
+/* =========================================
+   Theme Presets with Calibrated Contrast
+   ========================================= */
+
+/* Clear Day */
+body.theme-clear-day {
+  --bg: #0284c7;
+  --bg-gradient: linear-gradient(160deg, #0ea5e9 0%, #0284c7 30%, #0369a1 60%, #075985 85%, #0c4a6e 100%);
+  --ambient-glow: radial-gradient(circle at 85% 12%, rgba(254, 240, 138, 0.5) 0%, rgba(251, 191, 36, 0.25) 35%, rgba(14, 165, 233, 0.2) 65%, transparent 85%);
+  --surface-hero: rgba(255, 255, 255, 0.20);
+  --border-hero: rgba(255, 255, 255, 0.35);
+  --glow-hero: rgba(254, 240, 138, 0.6);
+  --surface-secondary: rgba(255, 255, 255, 0.12);
+  --border-secondary: rgba(255, 255, 255, 0.18);
+  --surface-tile: rgba(255, 255, 255, 0.08);
+  --border-tile: rgba(255, 255, 255, 0.12);
+  --accent: #fbbf24;
+  --accent-2: #f59e0b;
+  --text-muted: rgba(255, 255, 255, 0.85);
+}
+
+/* Clear Night */
+body.theme-clear-night {
+  --bg: #0a0f1d;
+  --bg-gradient: linear-gradient(160deg, #0f172a 0%, #1e1b4b 40%, #0f172a 75%, #030712 100%);
+  --ambient-glow: radial-gradient(circle at 80% 14%, rgba(224, 231, 255, 0.35) 0%, rgba(129, 140, 248, 0.18) 35%, transparent 75%);
+  --surface-hero: rgba(30, 41, 59, 0.65);
+  --border-hero: rgba(255, 255, 255, 0.22);
+  --glow-hero: rgba(165, 180, 252, 0.45);
+  --surface-secondary: rgba(20, 28, 45, 0.55);
+  --border-secondary: rgba(255, 255, 255, 0.12);
+  --surface-tile: rgba(255, 255, 255, 0.04);
+  --border-tile: rgba(255, 255, 255, 0.07);
+  --accent: #a5b4fc;
+  --accent-2: #c084fc;
+  --text-muted: rgba(255, 255, 255, 0.72);
+}
+
+/* Rain */
+body.theme-rain {
+  --bg: #0b1522;
+  --bg-gradient: linear-gradient(160deg, #1e293b 0%, #0f2338 45%, #0b1522 80%, #04080e 100%);
+  --ambient-glow: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.22) 0%, transparent 70%);
+  --surface-hero: rgba(18, 34, 54, 0.7);
+  --border-hero: rgba(56, 189, 248, 0.35);
+  --glow-hero: rgba(56, 189, 248, 0.4);
+  --surface-secondary: rgba(14, 26, 42, 0.6);
+  --border-secondary: rgba(255, 255, 255, 0.12);
+  --surface-tile: rgba(255, 255, 255, 0.04);
+  --border-tile: rgba(255, 255, 255, 0.07);
+  --accent: #38bdf8;
+  --accent-2: #7dd3fc;
+  --text-muted: rgba(255, 255, 255, 0.75);
+}
+
+/* Thunderstorm */
+body.theme-thunderstorm {
+  --bg: #0b0c16;
+  --bg-gradient: linear-gradient(160deg, #24143a 0%, #150f28 45%, #0c0918 80%, #05040a 100%);
+  --ambient-glow: radial-gradient(circle at 60% 10%, rgba(192, 132, 252, 0.3) 0%, transparent 75%);
+  --surface-hero: rgba(30, 20, 52, 0.72);
+  --border-hero: rgba(192, 132, 252, 0.4);
+  --glow-hero: rgba(192, 132, 252, 0.5);
+  --surface-secondary: rgba(22, 14, 38, 0.6);
+  --border-secondary: rgba(255, 255, 255, 0.12);
+  --surface-tile: rgba(255, 255, 255, 0.04);
+  --border-tile: rgba(255, 255, 255, 0.07);
+  --accent: #c084fc;
+  --accent-2: #e879f9;
+  --text-muted: rgba(255, 255, 255, 0.75);
+}
+
+/* Snow */
+body.theme-snow {
+  --bg: #0c1828;
+  --bg-gradient: linear-gradient(160deg, #183354 0%, #0f2238 45%, #0a1728 80%, #050c16 100%);
+  --ambient-glow: radial-gradient(circle at 50% 0%, rgba(186, 230, 253, 0.25) 0%, transparent 70%);
+  --surface-hero: rgba(24, 44, 70, 0.7);
+  --border-hero: rgba(186, 230, 253, 0.35);
+  --glow-hero: rgba(186, 230, 253, 0.4);
+  --surface-secondary: rgba(16, 30, 48, 0.6);
+  --border-secondary: rgba(255, 255, 255, 0.14);
+  --surface-tile: rgba(255, 255, 255, 0.05);
+  --border-tile: rgba(255, 255, 255, 0.08);
+  --accent: #bae6fd;
+  --accent-2: #e0f2fe;
+  --text-muted: rgba(255, 255, 255, 0.82);
+}
+
+/* Clouds */
+body.theme-clouds {
+  --bg: #0f172a;
+  --bg-gradient: linear-gradient(160deg, #27364b 0%, #172336 45%, #0f172a 85%, #070b14 100%);
+  --ambient-glow: radial-gradient(circle at 50% 10%, rgba(147, 197, 253, 0.2) 0%, transparent 75%);
+  --surface-hero: rgba(28, 40, 58, 0.7);
+  --border-hero: rgba(147, 197, 253, 0.3);
+  --glow-hero: rgba(147, 197, 253, 0.35);
+  --surface-secondary: rgba(18, 27, 40, 0.6);
+  --border-secondary: rgba(255, 255, 255, 0.12);
+  --surface-tile: rgba(255, 255, 255, 0.04);
+  --border-tile: rgba(255, 255, 255, 0.07);
+  --accent: #93c5fd;
+  --accent-2: #cbd5e1;
+  --text-muted: rgba(255, 255, 255, 0.78);
 }
 
 * {
@@ -20,9 +137,48 @@
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background: var(--bg);
+  background-image: var(--bg-gradient);
+  background-attachment: fixed;
   color: var(--text);
   min-height: 100vh;
   line-height: 1.5;
+  transition: background 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+}
+
+/* =========================================
+   Unified SVG Icon System
+   ========================================= */
+.svg-icon {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: -0.125em;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+/* Background Canvas & Ambient Overlay */
+.weather-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -2;
+  pointer-events: none;
+}
+
+.ambient-glow {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--ambient-glow);
+  transition: background-image 1.5s ease;
 }
 
 .hidden {
@@ -30,45 +186,62 @@ body {
 }
 
 .app {
-  max-width: 1120px;
+  max-width: 1140px;
   margin: 0 auto;
-  padding: 24px 18px 48px;
+  padding: 28px 20px 60px;
 }
 
-/* Header */
+/* =========================================
+   Header & Search Bar
+   ========================================= */
 .site-header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .brand-logo {
-  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--accent);
+}
+
+.logo-icon {
+  width: 26px;
+  height: 26px;
 }
 
 .brand h1 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #ffffff;
 }
 
 .tagline {
   color: var(--text-muted);
   font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .search-form {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   flex: 1;
   max-width: 520px;
   min-width: 280px;
@@ -77,74 +250,150 @@ body {
 .search-form input,
 .chat-form input {
   flex: 1;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
+  padding: 14px 18px;
+  border-radius: 16px;
+  border: 1px solid var(--border-secondary);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
   font-size: 1rem;
+  font-weight: 500;
   outline: none;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
+  transition: border-color 0.2s, background 0.2s;
 }
 
-.search-form input:focus,
-.chat-form input:focus {
-  border-color: var(--accent);
+.search-form input::placeholder,
+.chat-form input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .search-form button,
 .chat-form button {
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: none;
+  padding: 14px 22px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   background: var(--accent);
-  color: white;
-  font-weight: 600;
+  color: #0b1220;
+  font-weight: 700;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: background 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease, filter 0.2s ease, box-shadow 0.2s ease;
 }
 
 .search-form button:hover,
 .chat-form button:hover {
-  background: #3a8ce6;
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
-/* Cards */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px;
-  margin-bottom: 20px;
-  backdrop-filter: blur(8px);
+.search-form button:active,
+.chat-form button:active {
+  transform: translateY(0);
 }
 
-h3 {
-  margin-bottom: 14px;
+#geolocate-btn {
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid var(--border-secondary);
   font-size: 1.1rem;
-  font-weight: 600;
-}
-
-/* Current weather */
-.current-weather {
   display: flex;
-  flex-direction: column;
-  gap: 18px;
+  align-items: center;
+  justify-content: center;
 }
 
-.location-info h2 {
-  font-size: 1.8rem;
+#geolocate-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: var(--accent);
+}
+
+/* Accessible Focus States */
+button:focus-visible,
+input:focus-visible,
+.suggested-question:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.25);
+}
+
+/* =========================================
+   Glass Hierarchy System
+   ========================================= */
+
+/* Primary Hero Card (Current Weather) */
+.current-weather {
+  background: var(--surface-hero);
+  border: 1px solid var(--border-hero);
+  border-radius: var(--radius);
+  padding: 28px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  box-shadow: 0 20px 50px 0 rgba(0, 0, 0, 0.32), inset 0 1px 1px 0 rgba(255, 255, 255, 0.35);
+  position: relative;
+  overflow: hidden;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+/* Secondary Structural Cards */
+.card.secondary-card,
+.card.chat-card {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 12px 30px 0 rgba(0, 0, 0, 0.22);
+}
+
+.card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.card-header h3 {
+  font-size: 1.15rem;
   font-weight: 700;
+  color: #ffffff;
+}
+
+.card-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* =========================================
+   Current Weather Hero Typography
+   ========================================= */
+.location-info h2 {
+  font-size: 2.3rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #ffffff;
 }
 
 .location-info span {
   color: var(--text-muted);
+  font-size: 1.1rem;
+  font-weight: 500;
 }
 
 .current-main {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 28px;
   flex-wrap: wrap;
+  margin: 14px 0 22px;
 }
 
 .temp-block {
@@ -153,110 +402,232 @@ h3 {
 }
 
 .temp-block span:first-child {
-  font-size: 4.5rem;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-size: 5.6rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.06em;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.temp-block span:last-child {
+  font-size: 2.4rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  margin-left: 4px;
 }
 
 .weather-icon {
-  font-size: 4rem;
+  font-size: 4.6rem;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.weather-icon svg {
+  width: 1em;
+  height: 1em;
+  stroke: currentColor;
+  fill: none;
 }
 
 .condition p:first-child {
-  font-size: 1.3rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffffff;
 }
 
 .condition p:last-child {
   color: var(--text-muted);
+  font-size: 1.05rem;
+  font-weight: 500;
 }
 
+/* =========================================
+   Tertiary Detail Metric Tiles (Quiet)
+   ========================================= */
 .details-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
   gap: 12px;
 }
 
 .detail-item {
-  background: var(--surface-strong);
-  border-radius: 12px;
-  padding: 10px 12px;
+  background: var(--surface-tile);
+  border: 1px solid var(--border-tile);
+  border-radius: 16px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.detail-icon {
+  font-size: 1.4rem;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detail-content {
+  display: flex;
+  flex-direction: column;
 }
 
 .detail-label {
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-/* Hourly forecast */
+.detail-val {
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
+}
+
+/* =========================================
+   Hourly Forecast (Pill Tiles)
+   ========================================= */
 .hourly-scroll {
   display: flex;
   overflow-x: auto;
-  gap: 10px;
-  padding-bottom: 8px;
+  gap: 12px;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-secondary) transparent;
+}
+
+.hourly-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.hourly-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 999px;
 }
 
 .hour-item {
-  flex: 0 0 84px;
+  flex: 0 0 90px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  background: var(--surface-strong);
-  border-radius: 12px;
-  padding: 10px 6px;
+  gap: 8px;
+  background: var(--surface-tile);
+  border: 1px solid var(--border-tile);
+  border-radius: 18px;
+  padding: 14px 8px;
+}
+
+.hour-time {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .hour-icon {
-  font-size: 1.6rem;
+  font-size: 1.7rem;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .hour-temp {
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
 }
 
 .hour-precip {
-  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.8rem;
+  font-weight: 600;
   color: var(--accent-2);
 }
 
-/* Daily forecast */
+.hour-precip svg {
+  width: 0.9em;
+  height: 0.9em;
+}
+
+/* =========================================
+   Daily Forecast (Grid Tiles)
+   ========================================= */
 .daily-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .day-card {
-  background: var(--surface-strong);
-  border-radius: 12px;
-  padding: 12px;
+  background: var(--surface-tile);
+  border: 1px solid var(--border-tile);
+  border-radius: 18px;
+  padding: 16px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+.day-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #ffffff;
 }
 
 .day-icon {
   font-size: 2rem;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .day-temps {
   display: flex;
   gap: 8px;
-  font-weight: 700;
+  font-weight: 800;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.high {
+  color: #ffffff;
 }
 
 .low {
   color: var(--text-muted);
+  font-weight: 600;
 }
 
 .day-precip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   color: var(--accent-2);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
-/* Charts */
+.day-precip svg {
+  width: 0.9em;
+  height: 0.9em;
+}
+
+/* =========================================
+   Charts Section
+   ========================================= */
 .charts-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -264,22 +635,64 @@ h3 {
 }
 
 .chart-box {
-  height: 260px;
+  height: 270px;
   position: relative;
+  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid var(--border-tile);
+  border-radius: 16px;
+  padding: 12px;
 }
 
-/* Chat */
-.chat-card {
-  padding-bottom: 16px;
+/* =========================================
+   Distinct AI Chat Console
+   ========================================= */
+.chat-header {
+  margin-bottom: 18px;
+}
+
+.chat-title-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.chat-title-group h2 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.25), rgba(56, 189, 248, 0.25));
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.02em;
+}
+
+.badge-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
 }
 
 .chat-history {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: 360px;
+  gap: 14px;
+  max-height: 400px;
   overflow-y: auto;
-  padding: 10px 0;
+  padding: 10px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-secondary) transparent;
 }
 
 .chat-message {
@@ -291,35 +704,72 @@ h3 {
 }
 
 .chat-message .bubble {
-  max-width: 78%;
-  padding: 10px 14px;
-  border-radius: 16px;
-  line-height: 1.5;
-  white-space: pre-wrap;
+  max-width: 82%;
+  padding: 14px 20px;
+  border-radius: 20px;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
 .chat-message.user .bubble {
-  background: var(--accent);
-  color: white;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #0b1220;
+  font-weight: 600;
   border-bottom-right-radius: 4px;
 }
 
 .chat-message.ai .bubble {
-  background: var(--surface-strong);
-  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border: 1px solid var(--border-secondary);
   border-bottom-left-radius: 4px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* AI Markdown Typography Inside Bubbles */
+.chat-message.ai .bubble p {
+  margin-bottom: 8px;
+}
+
+.chat-message.ai .bubble p:last-child {
+  margin-bottom: 0;
+}
+
+.chat-message.ai .bubble strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.chat-message.ai .bubble ul.chat-list {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.chat-message.ai .bubble ul.chat-list li {
+  margin-bottom: 4px;
+}
+
+.chat-message.ai .bubble code {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.88em;
 }
 
 .typing {
   display: flex;
-  gap: 4px;
+  gap: 5px;
   align-items: center;
+  padding: 4px 2px;
 }
 
 .typing span {
   width: 8px;
   height: 8px;
-  background: var(--text-muted);
+  background: #ffffff;
   border-radius: 50%;
   animation: typing 1s infinite;
 }
@@ -334,35 +784,49 @@ h3 {
 
 @keyframes typing {
   0%, 100% { opacity: 0.3; transform: translateY(0); }
-  50% { opacity: 1; transform: translateY(-3px); }
+  50% { opacity: 1; transform: translateY(-4px); }
 }
 
 .suggested {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 12px;
+  margin: 16px 0 12px;
 }
 
 .suggested-question {
-  background: var(--surface-strong);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid var(--border-secondary);
+  color: #ffffff;
+  padding: 8px 14px;
   border-radius: 999px;
   cursor: pointer;
   font-size: 0.85rem;
-  transition: background 0.2s ease;
+  font-weight: 500;
+  transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .suggested-question:hover {
   background: var(--accent);
-  color: white;
+  color: #0b1220;
+  font-weight: 700;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .chat-form {
   display: flex;
-  gap: 8px;
+  gap: 10px;
+}
+
+/* =========================================
+   In-situ Shimmer Skeleton Loading State
+   ========================================= */
+.is-loading {
+  opacity: 0.55;
+  filter: blur(1.5px);
+  pointer-events: none;
+  transition: opacity 0.3s ease, filter 0.3s ease;
 }
 
 /* Footer */
@@ -370,51 +834,42 @@ h3 {
   text-align: center;
   color: var(--text-muted);
   font-size: 0.85rem;
-  margin-top: 20px;
+  margin-top: 28px;
+  font-weight: 500;
 }
 
-/* Loading overlay */
-.loading-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(8, 12, 22, 0.75);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid rgba(255, 255, 255, 0.2);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Toast */
 .toast {
   position: fixed;
-  bottom: 24px;
+  bottom: 28px;
   left: 50%;
   transform: translateX(-50%);
-  background: #161e2b;
+  background: rgba(15, 23, 42, 0.88);
   color: white;
-  border: 1px solid var(--border);
-  padding: 12px 20px;
+  border: 1px solid var(--border-secondary);
+  padding: 14px 24px;
   border-radius: 999px;
   z-index: 1100;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px);
+  font-weight: 500;
   max-width: 90vw;
   text-align: center;
 }
 
-/* Responsive */
+/* =========================================
+   Discipline for Reduced Motion
+   ========================================= */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =========================================
+   Responsive Breakpoints
+   ========================================= */
 @media (max-width: 640px) {
   .site-header {
     flex-direction: column;
@@ -427,7 +882,11 @@ h3 {
   }
 
   .brand h1 {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
+  }
+
+  .temp-block span:first-child {
+    font-size: 4.2rem;
   }
 
   .current-main {
@@ -440,6 +899,7 @@ h3 {
   }
 
   .chat-message .bubble {
-    max-width: 90%;
+    max-width: 92%;
   }
 }
+

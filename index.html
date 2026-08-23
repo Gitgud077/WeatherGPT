@@ -7,28 +7,35 @@
   <meta name="description" content="AI-powered conversational weather assistant grounded in real Open-Meteo data." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <canvas id="weather-canvas" class="weather-canvas" aria-hidden="true"></canvas>
+  <div class="ambient-glow" aria-hidden="true"></div>
   <div class="app">
     <header class="site-header">
       <div class="brand">
-        <span class="brand-logo">⛅</span>
+        <span class="brand-logo" aria-hidden="true">
+          <svg class="svg-icon logo-icon" viewBox="0 0 24 24"><path d="M12 2v2M4.93 4.93l1.41 1.41M20 12h2M19.07 4.93l-1.41 1.41M15.5 17h1a4.5 4.5 0 0 0 0-9 4.3 4.3 0 0 0-2.6.9A5 5 0 0 0 4.5 14a4 4 0 0 0 3.5 3h7.5"/></svg>
+        </span>
         <div>
           <h1>WeatherGPT</h1>
           <p class="tagline">Ask the weather anything.</p>
         </div>
       </div>
       <form id="search-form" class="search-form" autocomplete="off">
-        <input id="city-input" type="text" placeholder="Enter city..." aria-label="City name" />
+        <input id="city-input" type="text" placeholder="Search any city or coordinates..." aria-label="City name" />
         <button type="submit">Search</button>
-        <button type="button" id="geolocate-btn" title="Use my location" aria-label="Use my location">📍</button>
+        <button type="button" id="geolocate-btn" title="Use my location" aria-label="Use my location">
+          <svg class="svg-icon" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+        </button>
       </form>
     </header>
 
     <main>
       <section id="weather-section" class="hidden">
+        <!-- Hero Primary Glass Surface -->
         <div class="card current-weather">
           <div class="location-info">
             <h2 id="location-name">--</h2>
@@ -39,36 +46,69 @@
             <div class="temp-block">
               <span id="current-temp">--</span><span>°C</span>
             </div>
-            <div id="current-icon" class="weather-icon">--</div>
+            <div id="current-icon" class="weather-icon" aria-hidden="true"></div>
             <div class="condition">
               <p id="current-desc">--</p>
               <p>Feels like <span id="feels-like">--</span>°C</p>
             </div>
           </div>
 
+          <!-- Secondary Metric Tiles -->
           <div class="details-grid">
-            <div class="detail-item"><div class="detail-label">Humidity</div><div id="humidity">--</div></div>
-            <div class="detail-item"><div class="detail-label">Wind speed</div><div id="wind">--</div></div>
-            <div class="detail-item"><div class="detail-label">Wind direction</div><div id="wind-dir">--</div></div>
-            <div class="detail-item"><div class="detail-label">Precipitation</div><div id="precip">--</div></div>
-            <div class="detail-item"><div class="detail-label">Rain</div><div id="rain">--</div></div>
-            <div class="detail-item"><div class="detail-label">Sunrise</div><div id="sunrise">--</div></div>
-            <div class="detail-item"><div class="detail-label">Sunset</div><div id="sunset">--</div></div>
+            <div class="detail-item">
+              <div class="detail-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div>
+              <div class="detail-content"><div class="detail-label">Humidity</div><div id="humidity" class="detail-val">--</div></div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 0 14 16H2"/></svg></div>
+              <div class="detail-content"><div class="detail-label">Wind speed</div><div id="wind" class="detail-val">--</div></div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></div>
+              <div class="detail-content"><div class="detail-label">Wind direction</div><div id="wind-dir" class="detail-val">--</div></div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M17.5 14H9a5 5 0 1 1 4.9-6h1.6a3.5 3.5 0 1 1 2 6.5Z"/><path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3"/></svg></div>
+              <div class="detail-content"><div class="detail-label">Precipitation</div><div id="precip" class="detail-val">--</div></div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M22 12A10 10 0 0 0 2 12h20Z"/><path d="M12 12v7a2 2 0 0 0 4 0"/><path d="M12 2v2"/></svg></div>
+              <div class="detail-content"><div class="detail-label">Rain</div><div id="rain" class="detail-val">--</div></div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2v6M4.93 10.93l1.41 1.41M20 18h2M2 18h2M19.07 10.93l-1.41 1.41M22 22H2M8 6l4-4 4 4M16 18a4 4 0 0 0-8 0"/></svg></div>
+              <div class="detail-content"><div class="detail-label">Sunrise</div><div id="sunrise" class="detail-val">--</div></div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 10V4M4.93 10.93l1.41 1.41M20 18h2M2 18h2M19.07 10.93l-1.41 1.41M22 22H2M16 8l-4 4-4-4M16 18a4 4 0 0 0-8 0"/></svg></div>
+              <div class="detail-content"><div class="detail-label">Sunset</div><div id="sunset" class="detail-val">--</div></div>
+            </div>
           </div>
         </div>
 
-        <section class="card">
-          <h3>Hourly forecast</h3>
+        <!-- Hourly Forecast -->
+        <section class="card secondary-card">
+          <div class="card-header">
+            <h3>Hourly Forecast</h3>
+            <span class="card-hint">24-hour progression</span>
+          </div>
           <div id="hourly-container" class="hourly-scroll"></div>
         </section>
 
-        <section class="card">
-          <h3>7-day forecast</h3>
+        <!-- 7-Day Forecast -->
+        <section class="card secondary-card">
+          <div class="card-header">
+            <h3>7-Day Forecast</h3>
+            <span class="card-hint">Weekly outlook</span>
+          </div>
           <div id="daily-container" class="daily-grid"></div>
         </section>
 
-        <section class="card">
-          <h3>Weather charts</h3>
+        <!-- Charts Card -->
+        <section class="card secondary-card">
+          <div class="card-header">
+            <h3>Weather Trends & Analytics</h3>
+          </div>
           <div class="charts-grid">
             <div class="chart-box"><canvas id="temp-chart"></canvas></div>
             <div class="chart-box"><canvas id="precip-chart"></canvas></div>
@@ -76,8 +116,18 @@
         </section>
       </section>
 
+      <!-- AI Chat Console -->
       <section class="card chat-card">
-        <h2>Ask WeatherGPT</h2>
+        <div class="chat-header">
+          <div class="chat-title-group">
+            <h2>Ask WeatherGPT</h2>
+            <span class="ai-badge">
+              <svg class="svg-icon badge-icon" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+              Grounded AI Engine
+            </span>
+          </div>
+        </div>
+
         <div id="chat-history" class="chat-history"></div>
 
         <div id="suggested-questions" class="suggested">
@@ -89,19 +139,20 @@
         </div>
 
         <form id="chat-form" class="chat-form">
-          <input id="chat-input" type="text" placeholder="Ask about weather..." autocomplete="off" aria-label="Chat input" />
-          <button type="submit">Send</button>
+          <input id="chat-input" type="text" placeholder="Ask about forecast, outfits, travel, outdoor plans..." autocomplete="off" aria-label="Chat input" />
+          <button type="submit">
+            <span>Send</span>
+          </button>
         </form>
       </section>
     </main>
 
     <footer class="site-footer">
-      <p>Weather data by Open-Meteo. AI by Google Gemini.</p>
+      <p>Weather data by Open-Meteo. Grounded AI by Google Gemini.</p>
     </footer>
   </div>
 
-  <div id="loading-overlay" class="loading-overlay hidden"><div class="spinner"></div></div>
-  <div id="toast" class="toast hidden"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
   <script src="/script.js" defer></script>
