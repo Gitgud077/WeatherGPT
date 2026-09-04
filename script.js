@@ -359,6 +359,12 @@ async function onChatSubmit(event) {
   addChatMessage('user', message);
   input.value = '';
 
+  // Hide suggested questions after the first question is asked
+  const suggestedEl = $('suggested-questions');
+  if (suggestedEl) {
+    suggestedEl.style.display = 'none';
+  }
+
   state.chatHistory.push({ role: 'user', content: message });
   if (state.chatHistory.length > 10) state.chatHistory = state.chatHistory.slice(-10);
 
