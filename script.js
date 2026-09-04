@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   addChatMessage('ai', '**Hello!** I am WeatherGPT, powered by Google Gemini. Search for any location or ask me anything about the forecast, outdoor activities, or what to wear today.');
 
-  searchLocation('London');
+  searchLocation('Kolkata');
 });
 
 /* ---------- Location handling ---------- */
@@ -172,7 +172,7 @@ function renderCurrentWeather(current) {
   $('humidity').textContent = `${Math.round(current.humidity)}%`;
   $('wind').textContent = `${current.windSpeed} km/h`;
   $('wind-dir').textContent = windDirectionToText(current.windDirection);
-  $('precip').textContent = current.precipitation != null ? `${current.precipitation} mm` : '0 mm';
+  $('uv-index').textContent = formatUvIndex(current.uvIndex, current.maxUvIndex);
   $('rain').textContent = current.rain != null ? `${current.rain} mm` : '0 mm';
   $('sunrise').textContent = formatHour(current.sunrise);
   $('sunset').textContent = formatHour(current.sunset);
@@ -336,7 +336,7 @@ function renderCharts(forecast) {
   });
 }
 
-/* ---------- Chat with Markdown Rendering ---------- */
+/* ---------- Chat with Real-Time SSE Token Streaming ---------- */
 
 async function onChatSubmit(event) {
   event.preventDefault();
@@ -364,6 +364,9 @@ async function onChatSubmit(event) {
 
   showTypingIndicator();
 
+  let streamingBubble = null;
+  let accumulatedText = '';
+
   try {
     const response = await fetch('/api/chat', {
       method: 'POST',
@@ -381,19 +384,88 @@ async function onChatSubmit(event) {
       })
     });
 
-    const data = await response.json();
-
-    if (!data.success || !data.answer) {
-      throw new Error(data.error || 'WeatherGPT is having trouble responding right now.');
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData.error || `Server responded with status ${response.status}`);
     }
 
-    removeTypingIndicator();
-    addChatMessage('ai', data.answer);
-    state.chatHistory.push({ role: 'assistant', content: data.answer });
-    if (state.chatHistory.length > 10) state.chatHistory = state.chatHistory.slice(-10);
+    const contentType = response.headers.get('content-type') || '';
+
+    if (contentType.includes('text/event-stream') && response.body) {
+      const history = $('chat-history');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'chat-message ai';
+
+      streamingBubble = document.createElement('div');
+      streamingBubble.className = 'bubble';
+      streamingBubble.innerHTML = '<span class="streaming-cursor" aria-hidden="true"></span>';
+
+      messageDiv.appendChild(streamingBubble);
+
+      removeTypingIndicator();
+      history.appendChild(messageDiv);
+      history.scrollTop = history.scrollHeight;
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // keep uncompleted line
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data:')) continue;
+          const dataStr = trimmed.slice(5).trim();
+          if (dataStr === '[DONE]') break;
+
+          try {
+            const parsed = JSON.parse(dataStr);
+            if (parsed.error) {
+              throw new Error(parsed.error);
+            }
+            if (parsed.text) {
+              accumulatedText += parsed.text;
+              streamingBubble.innerHTML = formatMarkdown(accumulatedText) + '<span class="streaming-cursor" aria-hidden="true"></span>';
+              history.scrollTop = history.scrollHeight;
+            }
+          } catch (e) {
+            if (e.message && !e.message.includes('JSON')) throw e;
+          }
+        }
+      }
+
+      // Finalize message
+      streamingBubble.innerHTML = formatMarkdown(accumulatedText || 'No response generated.');
+      history.scrollTop = history.scrollHeight;
+
+      if (accumulatedText) {
+        state.chatHistory.push({ role: 'assistant', content: accumulatedText });
+        if (state.chatHistory.length > 10) state.chatHistory = state.chatHistory.slice(-10);
+      }
+    } else {
+      // Fallback non-streaming response
+      const data = await response.json();
+      removeTypingIndicator();
+      if (!data.success || !data.answer) {
+        throw new Error(data.error || 'WeatherGPT is having trouble responding right now.');
+      }
+      addChatMessage('ai', data.answer);
+      state.chatHistory.push({ role: 'assistant', content: data.answer });
+      if (state.chatHistory.length > 10) state.chatHistory = state.chatHistory.slice(-10);
+    }
   } catch (error) {
     removeTypingIndicator();
-    addChatMessage('ai', error.message || 'WeatherGPT is having trouble responding right now.');
+    if (streamingBubble) {
+      streamingBubble.innerHTML = formatMarkdown(accumulatedText ? `${accumulatedText}\n\n*(Error: ${error.message})*` : error.message);
+    } else {
+      addChatMessage('ai', error.message || 'WeatherGPT is having trouble responding right now.');
+    }
     showToast(error.message || 'WeatherGPT is having trouble responding right now.');
   } finally {
     isChatSubmitting = false;
@@ -526,6 +598,17 @@ function windDirectionToText(degrees) {
   const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
   const index = Math.round(degrees / 45) % 8;
   return directions[index];
+}
+
+function formatUvIndex(uv, maxUv) {
+  const target = uv != null && !isNaN(uv) ? Number(uv) : (maxUv != null && !isNaN(maxUv) ? Number(maxUv) : null);
+  if (target == null || isNaN(target)) return '--';
+  const val = Math.round(target * 10) / 10;
+  if (val <= 2) return `${val} (Low)`;
+  if (val <= 5) return `${val} (Mod)`;
+  if (val <= 7) return `${val} (High)`;
+  if (val <= 10) return `${val} (Very High)`;
+  return `${val} (Extreme)`;
 }
 
 function formatHour(timeString) {

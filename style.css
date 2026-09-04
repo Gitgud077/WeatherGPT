@@ -759,6 +759,24 @@ a:focus-visible {
   font-size: 0.88em;
 }
 
+/* Real-Time Streaming Token Cursor */
+.streaming-cursor {
+  display: inline-block;
+  width: 6px;
+  height: 14px;
+  background: var(--accent);
+  margin-left: 4px;
+  vertical-align: -1px;
+  border-radius: 2px;
+  box-shadow: 0 0 8px var(--accent);
+  animation: cursor-pulse 0.75s ease-in-out infinite alternate;
+}
+
+@keyframes cursor-pulse {
+  from { opacity: 0.2; transform: scaleY(0.7); }
+  to { opacity: 1; transform: scaleY(1); }
+}
+
 .typing {
   display: flex;
   gap: 5px;
@@ -902,4 +920,4 @@ a:focus-visible {
     max-width: 92%;
   }
 }
-
+

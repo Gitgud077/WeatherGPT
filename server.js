@@ -32,21 +32,36 @@ const mimeTypes = {
   '.ico': 'image/x-icon'
 };
 
-const apiRoutes = {
-  '/api/weather': require('./api/weather'),
-  '/api/forecast': require('./api/forecast'),
-  '/api/geocode': require('./api/geocode'),
-  '/api/chat': require('./api/chat')
-};
+function getApiHandler(pathname) {
+  const routeMap = {
+    '/api/weather': './api/weather',
+    '/api/forecast': './api/forecast',
+    '/api/geocode': './api/geocode',
+    '/api/chat': './api/chat'
+  };
+
+  const target = routeMap[pathname];
+  if (!target) return null;
+
+  // In development, clear require cache for api and lib so code edits apply instantly
+  Object.keys(require.cache).forEach((key) => {
+    if (key.includes('/api/') || key.includes('\\api\\') || key.includes('/lib/') || key.includes('\\lib\\')) {
+      delete require.cache[key];
+    }
+  });
+
+  return require(target);
+}
 
 const server = http.createServer(async (req, res) => {
   const parsedUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = parsedUrl.pathname;
 
   // Check API routes
-  if (apiRoutes[pathname]) {
+  const handler = getApiHandler(pathname);
+  if (handler) {
     try {
-      return await apiRoutes[pathname](req, res);
+      return await handler(req, res);
     } catch (err) {
       console.error('API error:', err);
       res.statusCode = 500;

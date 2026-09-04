@@ -97,6 +97,7 @@ function buildWeatherContext(location, current, forecast) {
       windDirection: current.windDirection,
       precipitation: current.precipitation,
       rain: current.rain,
+      uvIndex: current.uvIndex,
       weather: current.weatherDescription,
       isDay: current.isDay,
       sunrise: current.sunrise,
@@ -111,7 +112,7 @@ function buildWeatherContext(location, current, forecast) {
   };
 }
 
-async function callGemini(apiKey, userMessage, conversation, weatherContext) {
+async function streamGemini(apiKey, userMessage, conversation, weatherContext, res) {
   // Build sanitized conversation history with alternating roles
   const contents = [];
   let lastRole = null;
@@ -146,7 +147,7 @@ async function callGemini(apiKey, userMessage, conversation, weatherContext) {
   for (const model of fallbackModels) {
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`,
         {
           method: 'POST',
           headers: {
@@ -167,29 +168,67 @@ async function callGemini(apiKey, userMessage, conversation, weatherContext) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.warn(`Gemini API error on model ${model}:`, response.status, errorText);
+        console.warn(`Gemini streaming error on model ${model}:`, response.status, errorText);
         lastError = new Error(`Gemini request failed (${response.status})`);
         continue;
       }
 
-      const data = await response.json();
-      const parts = data.candidates?.[0]?.content?.parts || [];
-      const answer = parts
-        .filter((part) => !part.thought && part.text)
-        .map((part) => part.text)
-        .join('')
-        .trim();
+      // Start SSE stream to client
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        'Connection': 'keep-alive',
+        'X-Accel-Buffering': 'no',
+        'Access-Control-Allow-Origin': '*'
+      });
 
-      if (answer) {
-        return answer;
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data:')) continue;
+          const jsonStr = trimmed.slice(5).trim();
+          if (jsonStr === '[DONE]') continue;
+
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const parts = parsed.candidates?.[0]?.content?.parts || [];
+            for (const part of parts) {
+              if (!part.thought && part.text) {
+                res.write(`data: ${JSON.stringify({ text: part.text })}\n\n`);
+              }
+            }
+          } catch (e) {
+            // Partial JSON chunk
+          }
+        }
       }
+
+      res.write(`data: [DONE]\n\n`);
+      res.end();
+      return;
     } catch (err) {
-      console.warn(`Gemini call error on model ${model}:`, err.message);
+      console.warn(`Gemini streaming error on model ${model}:`, err.message);
       lastError = err;
     }
   }
 
-  throw lastError || new Error('Gemini returned an empty response');
+  if (!res.headersSent) {
+    throw lastError || new Error('All Gemini models failed to respond.');
+  } else {
+    res.write(`data: ${JSON.stringify({ error: lastError?.message || 'Streaming interrupted' })}\n\n`);
+    res.end();
+  }
 }
 
 module.exports = async function handler(req, res) {
@@ -255,14 +294,17 @@ module.exports = async function handler(req, res) {
     const forecast = await getForecastData(coordinates.latitude, coordinates.longitude);
     const weatherContext = buildWeatherContext(location, current, forecast);
 
-    const answer = await callGemini(apiKey, message, conversation, weatherContext);
-
-    return sendJson(res, 200, { success: true, answer });
+    await streamGemini(apiKey, message, conversation, weatherContext, res);
   } catch (error) {
     console.error('Chat handler error:', error);
-    return sendJson(res, 502, {
-      success: false,
-      error: 'WeatherGPT is having trouble responding right now. Please try again shortly.'
-    });
+    if (!res.headersSent) {
+      return sendJson(res, 502, {
+        success: false,
+        error: 'WeatherGPT is having trouble responding right now. Please try again shortly.'
+      });
+    } else {
+      res.write(`data: ${JSON.stringify({ error: 'WeatherGPT encountered an error while streaming.' })}\n\n`);
+      res.end();
+    }
   }
 };
