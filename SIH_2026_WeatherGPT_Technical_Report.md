@@ -5,10 +5,10 @@
 
 # Project Name: WeatherGPT
 ### Subtitle: Grounded Conversational Weather Intelligence Platform
-**Document Version:** 1.0.0  
+**Document Version:** 1.1.0  
 **Target Event:** Smart India Hackathon 2026  
 **Project Category:** Software / AI & Web Applications  
-**Current Status:** Fully Functional Prototype / MVP Deployed  
+**Current Status:** Fully Functional Prototype (Phase 1 MVP Deployed)  
 
 ---
 
@@ -27,8 +27,8 @@
 11. [Feasibility Analysis](#11-feasibility-analysis)
 12. [Scalability Strategy](#12-scalability-strategy)
 13. [Reliability & Error Handling Matrix](#13-reliability--error-handling-matrix)
-14. [Future Technology Prospects](#14-future-technology-prospects)
-15. [Product Roadmap](#15-product-roadmap)
+14. [Final-Round Technology Prospects](#14-final-round-technology-prospects)
+15. [Product Roadmap (2-Stage Hackathon Plan)](#15-product-roadmap-2-stage-hackathon-plan)
 16. [Competitive Differentiation](#16-competitive-differentiation)
 17. [Target Users & User Personas](#17-target-users--user-personas)
 18. [Impact & Value Proposition](#18-impact--value-proposition)
@@ -63,10 +63,10 @@ WeatherGPT couples high-precision meteorological observation and forecast data f
 └─────────────────┘       └────────────────────────┘       └─────────────────────────┘
 ```
 
-### 1.4 Current Prototype Status
-* **Status:** Fully functional, deployed web application.
-* **Core Capabilities:** Real-time location search and geocoding, current weather observation with UV Index, hourly 24-hour visual progression, 7-day extended forecasts, interactive Chart.js visualizations, ambient dynamic particle canvas matching live weather conditions, and a real-time Server-Sent Events (SSE) streaming conversational AI console.
-* **Deployment:** Hosted on Vercel Serverless Architecture with Git-driven CI/CD.
+### 1.4 Project Scope & Hackathon Alignment
+To ensure maximum focus, practical execution, and zero speculative bloat, the project roadmap is divided strictly into **two clear stages**:
+* **Phase 1 (Current Submission / Working MVP):** The complete, fully working web application submitted today, featuring real-time geocoding, current weather with UV index, 24-hour visual progression, 7-day forecast cards, dynamic particle canvas, interactive Chart.js graphs, and real-time Server-Sent Events (SSE) AI streaming.
+* **Phase 2 (Final Round / Grand Finale Demonstration):** High-impact enhancements prepared for the final presentation, including multi-location comparison, interactive radar/precipitation layers, voice I/O, and Indian multilingual assistance.
 
 ---
 
@@ -223,22 +223,22 @@ WeatherGPT is designed as a decoupled, serverless web application that separates
 
 | Technology | Purpose in Project | Rationale for Selection | Status |
 |---|---|---|---|
-| **HTML5** | Semantic Document Structure | Native browser compatibility, SEO optimization, and screen-reader accessibility without framework overhead. | **Current** |
-| **CSS3** | Visual Design & Theming | CSS Custom Properties (Variables), 3-tier frosted glass backdrop filters, smooth transitions, and responsive grid layouts. | **Current** |
-| **JavaScript (ES6+)** | Frontend Logic & State Management | Zero-dependency DOM orchestration, Fetch API, SSE stream reader (`ReadableStreamDefaultReader`), and dynamic Chart.js lifecycle management. | **Current** |
-| **HTML5 Canvas API** | Ambient Weather Visualization | Hardware-accelerated 60 FPS particle rendering for ambient weather backgrounds (rain, snow, clouds, sunbeams, lightning). | **Current** |
-| **Chart.js (v4.4)** | Meteorological Visualizations | Lightweight visualization library rendering 24-hour hourly temperature curves and rain probability bar charts. | **Current** |
-| **Node.js (v18+)** | Backend Runtime Environment | Asynchronous non-blocking I/O runtime powering local development and serverless functions. | **Current** |
-| **Vercel Serverless Functions** | Cloud Backend Execution | Auto-scaling, zero-maintenance serverless execution for API endpoints with rapid global cold-start times. | **Current** |
-| **Open-Meteo Weather API** | Meteorological Data Provider | High-precision weather data based on national weather model feeds (NOAA, ECMWF, DWD) with no mandatory API key bottlenecks for open prototypes. | **Current** |
-| **Open-Meteo Geocoding API** | Location Coordinate Translation | Fast worldwide place-name resolution, timezone detection, and administrative boundary mapping. | **Current** |
-| **Google Gemini API** | Natural Language Reasoning | Generative AI processing structured weather context and streaming contextual responses using `gemini-3.6-flash`. | **Current** |
-| **Server-Sent Events (SSE)** | Real-Time AI Token Streaming | Low-overhead unidirectional HTTP streaming delivering instantaneous token-by-token typing in the chat console. | **Current** |
-| **GitHub** | Source Code Management & CI/CD | Version control and automated deployment triggers integrated with Vercel. | **Current** |
-| **Environment Variables (`.env`)** | Secret Configuration Storage | Isolation of sensitive API keys (`GEMINI_API_KEY`) on the server side to prevent client exposure. | **Current** |
-| **Redis / Upstash** | Edge Caching Layer | Proposed caching layer to cache repeated city forecast queries and reduce upstream API overhead. | *Proposed (Phase 2)* |
-| **Web Speech API** | Voice Input / Output | Proposed browser-native speech-to-text and text-to-speech for hands-free interactions. | *Proposed (Phase 3)* |
-| **PWA (Service Workers)** | Offline & Installability | Proposed progressive web app caching for offline access to recent forecast snapshots. | *Proposed (Phase 3)* |
+| **HTML5** | Semantic Document Structure | Native browser compatibility, SEO optimization, and screen-reader accessibility without framework overhead. | **Current (Phase 1)** |
+| **CSS3** | Visual Design & Theming | CSS Custom Properties (Variables), 3-tier frosted glass backdrop filters, smooth transitions, and responsive grid layouts. | **Current (Phase 1)** |
+| **JavaScript (ES6+)** | Frontend Logic & State Management | Zero-dependency DOM orchestration, Fetch API, SSE stream reader (`ReadableStreamDefaultReader`), and dynamic Chart.js lifecycle management. | **Current (Phase 1)** |
+| **HTML5 Canvas API** | Ambient Weather Visualization | Hardware-accelerated 60 FPS particle rendering for ambient weather backgrounds (rain, snow, clouds, sunbeams, lightning). | **Current (Phase 1)** |
+| **Chart.js (v4.4)** | Meteorological Visualizations | Lightweight visualization library rendering 24-hour hourly temperature curves and rain probability bar charts. | **Current (Phase 1)** |
+| **Node.js (v18+)** | Backend Runtime Environment | Asynchronous non-blocking I/O runtime powering local development and serverless functions. | **Current (Phase 1)** |
+| **Vercel Serverless Functions** | Cloud Backend Execution | Auto-scaling, zero-maintenance serverless execution for API endpoints with rapid global cold-start times. | **Current (Phase 1)** |
+| **Open-Meteo Weather API** | Meteorological Data Provider | High-precision weather data based on national weather model feeds (NOAA, ECMWF, DWD) with no mandatory API key bottlenecks for open prototypes. | **Current (Phase 1)** |
+| **Open-Meteo Geocoding API** | Location Coordinate Translation | Fast worldwide place-name resolution, timezone detection, and administrative boundary mapping. | **Current (Phase 1)** |
+| **Google Gemini API** | Natural Language Reasoning | Generative AI processing structured weather context and streaming contextual responses using `gemini-3.6-flash`. | **Current (Phase 1)** |
+| **Server-Sent Events (SSE)** | Real-Time AI Token Streaming | Low-overhead unidirectional HTTP streaming delivering instantaneous token-by-token typing in the chat console. | **Current (Phase 1)** |
+| **GitHub** | Source Code Management & CI/CD | Version control and automated deployment triggers integrated with Vercel. | **Current (Phase 1)** |
+| **Environment Variables (`.env`)** | Secret Configuration Storage | Isolation of sensitive API keys (`GEMINI_API_KEY`) on the server side to prevent client exposure. | **Current (Phase 1)** |
+| **Redis / Upstash** | Edge Caching Layer | Caching layer to cache repeated city forecast queries and reduce upstream API overhead. | *Phase 2 (Final Demo)* |
+| **Web Speech API** | Voice Input / Output | Browser-native speech-to-text and text-to-speech for hands-free interactions. | *Phase 2 (Final Demo)* |
+| **Leaflet.js** | Interactive Radar & Rain Maps | Lightweight interactive map library for geographic precipitation layer visualization. | *Phase 2 (Final Demo)* |
 
 ---
 
@@ -388,12 +388,12 @@ The factual context injected into Gemini contains a structured snapshot:
 
 ### 10.1 Implemented Security Measures vs Proposed Enhancements
 
-| Security Domain | Currently Implemented in Prototype | Proposed Future Enhancements |
+| Security Domain | Currently Implemented (Phase 1) | Final-Round Enhancements (Phase 2) |
 |---|---|---|
-| **API Key Protection** | Sensitive keys (`GEMINI_API_KEY`) reside exclusively in server-side environment variables; zero client exposure. | Key rotation automation via cloud secrets managers (e.g., Google Secret Manager / AWS KMS). |
-| **Input Validation** | Coordinate sanity checks (`-90 <= lat <= 90`), string trimming, and 500-char message limits. | Strict JSON schema validators (Zod / Joi) on all endpoints. |
+| **API Key Protection** | Sensitive keys (`GEMINI_API_KEY`) reside exclusively in server-side environment variables; zero client exposure. | Automated secret rotation and verification scripts. |
+| **Input Validation** | Coordinate sanity checks (`-90 <= lat <= 90`), string trimming, and 500-char message limits. | Strict JSON schema validation on all endpoints. |
 | **CORS Configuration** | Standardized CORS headers in `lib/http.js` handling `OPTIONS` preflight requests. | Domain-restricted origin whitelisting for production deployments. |
-| **Data Sanitization** | HTML entity escaping in Markdown parser to eliminate Cross-Site Scripting (XSS). | Content Security Policy (CSP) headers restricting third-party script injections. |
+| **Data Sanitization** | HTML entity escaping in Markdown parser to eliminate Cross-Site Scripting (XSS). | Enhanced Content Security Policy (CSP) headers. |
 | **Abuse & Rate Limiting** | Vercel's default DDoS filtering and serverless timeout execution limits. | Redis-based token bucket rate limiting (e.g., Upstash) per client IP. |
 
 ---
@@ -419,17 +419,14 @@ The architecture relies on proven web standards:
 
 ## 12. SCALABILITY STRATEGY
 
-### 12.1 Scaling Tiers
+### 12.1 Scaling Progression (2-Stage Execution)
 
 ```
-[ MVP / Prototype ] (Current)
-  └── Vercel Serverless Functions + Stateless Client State + Direct API Calls
+[ Phase 1: Current Submission MVP ] (Deployed Now)
+  └── Vercel Serverless Functions + Stateless Client State + Direct API Calls + Instant SSE Streaming
 
-[ Phase 2: Moderate Scale (10k - 100k Daily Users) ]
-  └── Edge Caching (5-min TTL on identical city coords) + Redis Rate Limiting + CDN Distribution
-
-[ Phase 3: High Scale Platform (1M+ Users) ]
-  └── Persistent PostgreSQL Database + BullMQ Worker Queues + Multi-Region Edge Routing
+[ Phase 2: Final Day Demonstration & Production Scale ] (Grand Finale Target)
+  └── Edge Caching (5-min TTL on identical city coords) + Redis Rate Limiting + Voice I/O + Radar Map Layers
 ```
 
 ---
@@ -446,58 +443,62 @@ The architecture relies on proven web standards:
 
 ---
 
-## 14. FUTURE TECHNOLOGY PROSPECTS
+## 14. FINAL-ROUND TECHNOLOGY PROSPECTS
 
-### 14.1 Detailed Prospect Breakdown
+For the **Final Hackathon Demonstration Day (Phase 2)**, the following four concrete, high-impact features are planned for integration:
+
+### 14.1 Key Final-Day Enhancements
 
 #### A. Multilingual Indian Language Support
 * **Concept:** Allow citizens across India to converse in regional languages (Hindi, Bengali, Tamil, Marathi, Telugu, etc.).
 * **Technology:** Leverage Gemini's multilingual tokens + localized weather terminology mapping.
 * **Benefit:** Bridges the digital divide for non-English-speaking farmers, daily-wage workers, and rural commuters.
-* **Roadmap:** *Medium-Term (Months 3–6)*.
 
 #### B. Voice-Driven Weather Assistant
 * **Concept:** Hands-free weather queries via microphone with spoken voice responses.
 * **Technology:** Web Speech API (`SpeechRecognition` and `SpeechSynthesis`).
 * **Benefit:** Essential accessibility for visually impaired individuals and drivers on the road.
-* **Roadmap:** *Medium-Term (Months 3–6)*.
 
-#### C. Travel & Activity Intelligence
-* **Concept:** Synthesizes weather with specific human activities (e.g., *"Is tomorrow good for dry-cleaning clothes outdoors?"* or *"Can I plan a road trip to Digha this Saturday?"*).
-* **Technology:** Multi-parameter evaluation weighing humidity, wind, UV, and rain probability over multi-day windows.
-* **Roadmap:** *Medium-Term (Months 3–6)*.
-
-#### D. Multi-Location Comparison
+#### C. Multi-Location Comparison
 * **Concept:** Direct side-by-side comparative queries (e.g., *"Compare weather between Kolkata and Delhi tomorrow morning"*).
 * **Technology:** Parallel dual-geocoding and multi-context JSON injection.
-* **Roadmap:** *Short-Term (Months 1–3)*.
+* **Benefit:** Enables travelers and event organizers to evaluate route destinations instantly.
+
+#### D. Interactive Weather Radar & Precipitation Layer
+* **Concept:** Live satellite precipitation tile overlays.
+* **Technology:** Leaflet.js with Open-Meteo precipitation tile layers.
+* **Benefit:** Gives users visual confirmation of cloud and rain front movements.
 
 ---
 
-## 15. PRODUCT ROADMAP
+## 15. PRODUCT ROADMAP (2-STAGE HACKATHON PLAN)
 
 ```
-PHASE 1 — CURRENT MVP (Completed)
-├── Conversational weather with Google Gemini
-├── Live Open-Meteo Integration (Current, UV Index, Hourly, 7-Day)
-├── Real-Time Server-Sent Events (SSE) Streaming Token Typing
-├── 3-Tier Layered Glassmorphism Design System
-├── Interactive Temperature & Precipitation Charts
-└── Vercel Serverless Cloud Deployment
+═════════════════════════════════════════════════════════════════════════════════
+                       WEATHERGPT 2-STAGE ROADMAP
+═════════════════════════════════════════════════════════════════════════════════
 
-PHASE 2 — ENHANCEMENTS & EXPANSION (Months 2 - 4)
-├── Multi-Location Side-by-Side Comparison Module
-├── Interactive Weather Radar & Satellite Map Layer
-├── Persistent Session Memory & Favorite City Bookmarks
-├── Edge Caching Layer via Redis (Upstash)
-└── Advanced Context Grounding (Air Quality Index & Pollen Count)
+ PHASE 1: INITIAL SUBMISSION (Fully Functional Working MVP) — [ COMPLETED & DEPLOYED ]
+ ├── Conversational weather reasoning powered by Google Gemini (gemini-3.6-flash)
+ ├── Live Open-Meteo Integration (Current weather, UV Index, 24-hr Hourly, 7-Day Forecast)
+ ├── Real-Time Server-Sent Events (SSE) Streaming Token Typing with Pulsing Cursor
+ ├── 3-Tier Layered Glassmorphism Design System (Mobile-first responsive layout)
+ ├── Universal 24x24 Stroke-Based SVG Vector Icon System (currentColor inheritance)
+ ├── Hardware-Accelerated Dynamic Ambient Particle Weather Canvas
+ ├── Interactive Temperature & Rain Probability Curves via Chart.js
+ └── Vercel Serverless Cloud Deployment with Secure Server-Side API Key Isolation
 
-PHASE 3 — ADVANCED PLATFORM & ECOSYSTEM (Months 5 - 8)
-├── Voice Interaction Engine (Speech-to-Text / Text-to-Speech)
-├── Multilingual Indian Language Localization (10+ Languages)
-├── Proactive Web Push Notifications for Severe Weather Warnings
-├── Cross-Platform Mobile Applications (Android / iOS)
-└── Enterprise B2B API Layer for Logistics & Travel Integrations
+                                       │
+                                       ▼
+
+ PHASE 2: GRAND FINALE / FINAL ROUND UPDATE — [ PREPARED FOR FINAL EVALUATION DAY ]
+ ├── Multi-Location Side-by-Side Comparison Module ("Compare Kolkata and Delhi")
+ ├── Interactive Weather Radar & Precipitation Map Layer (Leaflet.js integration)
+ ├── Voice Interaction Engine (Speech-to-Text & Text-to-Speech via Web Speech API)
+ ├── Multilingual Indian Language Localization (Hindi, Bengali, Tamil, etc.)
+ ├── Session Memory & Favorite City Bookmarks (localStorage)
+ └── Edge Caching Layer via Redis (Upstash) for Sub-100ms Repeated Query Responses
+═════════════════════════════════════════════════════════════════════════════════
 ```
 
 ---
@@ -555,22 +556,27 @@ WeatherGPT Grounded Paradigm:
 1. **AI Hallucination:** Strict anti-hallucination system prompt + data injected as sole source of truth. Model is instructed to decline when data is absent.
 2. **Third-Party API Downtime:** Redundant endpoint fallbacks, graceful UI toasts, and cached historical forecast state.
 3. **LLM API Cost at High Concurrency:** Redis caching of synthesized answers for identical queries + lightweight flash models (`gemini-3.6-flash`).
-4. **Internet Connectivity Drop:** Service Worker caching (Phase 3) to allow offline review of the most recent weather snapshot.
+4. **Internet Connectivity Drop:** Graceful offline detection with non-blocking toast notifications.
 
 ---
 
 ## 20. IMPLEMENTATION & DEVELOPMENT PLAN
 
-1. **Milestone 1:** Architectural Design & Wireframing *(Completed)*
-2. **Milestone 2:** Open-Meteo Integration (Current, UV, Forecast) *(Completed)*
-3. **Milestone 3:** Vercel Serverless Function Scaffolding *(Completed)*
-4. **Milestone 4:** Google Gemini API & Prompt Grounding *(Completed)*
-5. **Milestone 5:** Server-Sent Events (SSE) Real-time Streaming *(Completed)*
-6. **Milestone 6:** 3-Tier Glassmorphism & SVG Vector Iconography *(Completed)*
-7. **Milestone 7:** Chart.js Hourly Temperature & Rain Curves *(Completed)*
-8. **Milestone 8:** SIH Hackathon Evaluation & Testing Dossier *(ACTIVE)*
-9. **Milestone 9:** Multilingual & Multi-Location Extension *(Planned)*
-10. **Milestone 10:** Native PWA & Voice Interface Deployment *(Planned)*
+```
+PHASE 1: INITIAL SUBMISSION MILESTONES (Completed)
+├── Milestone 1: Architectural Design & Wireframing
+├── Milestone 2: Open-Meteo Integration (Current, UV, Forecast)
+├── Milestone 3: Vercel Serverless Function Scaffolding
+├── Milestone 4: Google Gemini API & Prompt Grounding
+├── Milestone 5: Server-Sent Events (SSE) Real-time Streaming
+├── Milestone 6: 3-Tier Glassmorphism & SVG Vector Iconography
+└── Milestone 7: Chart.js Hourly Temperature & Rain Curves
+
+PHASE 2: FINAL EVALUATION DAY MILESTONES (Targeted for Grand Finale)
+├── Milestone 8: Multi-Location Comparison & Voice I/O Integration
+├── Milestone 9: Multilingual Indian Language Localization
+└── Milestone 10: Interactive Weather Radar Map Layer & Final Demonstration
+```
 
 ---
 
@@ -644,7 +650,7 @@ WeatherGPT transforms meteorological data from static numbers on a screen into a
 
 By pairing real-time meteorological observations from Open-Meteo with the natural-language capabilities of Google Gemini in a secure, serverless architecture, WeatherGPT demonstrates a practical, scalable, and human-centric solution for the modern web.
 
-The project stands as a fully functional, production-ready prototype built with clear engineering discipline, ready for deployment and future expansion at **Smart India Hackathon 2026**.
+The project stands as a fully functional, production-ready prototype built with clear engineering discipline, ready for deployment and evaluation at **Smart India Hackathon 2026**.
 
 ---
 
