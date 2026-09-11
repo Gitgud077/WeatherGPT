@@ -1033,6 +1033,330 @@ a:focus-visible {
 }
 
 /* =========================================
+   Phase 2: Header Actions, Language & Bookmarks
+   ========================================= */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lang-select {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border-secondary);
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.lang-select:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: var(--accent);
+}
+
+.lang-select option {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border-secondary);
+  color: var(--text-muted);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.header-btn.active {
+  background: var(--accent);
+  color: #0b1220;
+  border-color: var(--accent);
+}
+
+/* Bookmarks Pills Bar */
+.bookmarks-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-top: 8px;
+  scrollbar-width: none;
+}
+
+.bookmarks-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.bookmark-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border-tile);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease;
+  white-space: nowrap;
+}
+
+.bookmark-chip:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.bookmark-chip .remove-bm {
+  font-size: 0.9rem;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.bookmark-chip .remove-bm:hover {
+  opacity: 1;
+  color: var(--danger);
+}
+
+/* Location Header Bookmark Button */
+.location-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bookmark-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-secondary);
+  color: var(--text-muted);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bookmark-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fbbf24;
+  transform: scale(1.08);
+}
+
+.bookmark-btn.active {
+  background: rgba(251, 191, 36, 0.25);
+  border-color: #fbbf24;
+  color: #fbbf24;
+}
+
+.bookmark-btn.active .star-icon {
+  fill: #fbbf24;
+}
+
+/* =========================================
+   Phase 2: Multi-Location Comparison Module
+   ========================================= */
+.comparison-card {
+  margin-bottom: 24px;
+}
+
+.close-icon-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-secondary);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.close-icon-btn:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #ffffff;
+}
+
+.comparison-search-bar {
+  margin-bottom: 20px;
+}
+
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.compare-col {
+  background: var(--surface-tile);
+  border: 1px solid var(--border-tile);
+  border-radius: 18px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.compare-col-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-tile);
+  padding-bottom: 10px;
+}
+
+.compare-city-name {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.compare-temp-badge {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.compare-metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.compare-metric-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.compare-metric-val {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* =========================================
+   Phase 2: Leaflet Radar Map Container
+   ========================================= */
+.header-title-flex {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.radar-map-container {
+  width: 100%;
+  height: 340px;
+  border-radius: 18px;
+  border: 1px solid var(--border-tile);
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.leaflet-container {
+  background: #0f172a !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(15, 23, 42, 0.85) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px);
+}
+
+/* =========================================
+   Phase 2: Voice Mic & TTS Buttons
+   ========================================= */
+.voice-mic-btn {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border-secondary);
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.voice-mic-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+  color: var(--accent);
+}
+
+.voice-mic-btn.mic-listening {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: #ef4444;
+  color: #ffffff;
+  animation: mic-pulse 1.2s infinite alternate;
+}
+
+@keyframes mic-pulse {
+  from { box-shadow: 0 0 4px rgba(239, 68, 68, 0.4); transform: scale(1); }
+  to { box-shadow: 0 0 16px rgba(239, 68, 68, 0.9); transform: scale(1.05); }
+}
+
+.tts-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.tts-btn:hover {
+  color: var(--accent);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tts-btn.tts-playing {
+  color: #fbbf24;
+  animation: tts-pulse 1s infinite alternate;
+}
+
+@keyframes tts-pulse {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+
+/* =========================================
    Discipline for Reduced Motion
    ========================================= */
 @media (prefers-reduced-motion: reduce) {

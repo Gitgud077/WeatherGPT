@@ -6,12 +6,22 @@ const state = {
   location: null,
   current: null,
   forecast: null,
-  chatHistory: []
+  chatHistory: [],
+  language: 'en',
+  bookmarks: JSON.parse(localStorage.getItem('weathergpt_bookmarks') || '[]'),
+  comparisonLocation: null,
+  comparisonCurrent: null,
+  comparisonForecast: null
 };
 
 let tempChart = null;
 let precipChart = null;
 let weatherCanvas = null;
+let radarMap = null;
+let radarMarker = null;
+let speechRecognizer = null;
+let isVoiceListening = false;
+let currentSpeechUtterance = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -32,7 +42,221 @@ const ICONS = {
   cloudLightning: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M17.5 13H9a5 5 0 1 1 4.9-6h1.6a3.5 3.5 0 1 1 2 6.5Z"/><path d="m13 14-2 4h3l-2 4"/></svg>`,
   cloudSnow: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M17.5 14H9a5 5 0 1 1 4.9-6h1.6a3.5 3.5 0 1 1 2 6.5Z"/><circle cx="8" cy="18" r="1"/><circle cx="12" cy="18" r="1"/><circle cx="16" cy="18" r="1"/></svg>`,
   droplet: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>`,
-  sparkles: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>`
+  sparkles: `<svg class="svg-icon" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>`,
+  speaker: `<svg class="svg-icon" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`
+};
+
+/* =========================================
+   Multilingual Indian UI Translations Dictionary
+   ========================================= */
+const TRANSLATIONS = {
+  en: {
+    tagline: 'Ask the weather anything.',
+    searchBtn: 'Search',
+    compareBtn: 'Compare',
+    askGptBtn: 'Ask WeatherGPT',
+    compareTitle: 'Multi-Location Side-by-Side Comparison',
+    feelsLike: 'Feels like',
+    humidity: 'Humidity',
+    wind: 'Wind speed',
+    windDir: 'Wind direction',
+    uv: 'UV Index',
+    rain: 'Rain',
+    sunrise: 'Sunrise',
+    sunset: 'Sunset',
+    radarTitle: 'Interactive Weather Radar & Rain Layer',
+    radarHint: 'Real-time satellite precipitation coverage',
+    hourlyTitle: 'Hourly Forecast',
+    hourlyHint: '24-hour progression',
+    dailyTitle: '7-Day Forecast',
+    dailyHint: 'Weekly outlook',
+    trendsTitle: 'Weather Trends & Analytics',
+    footer: 'Weather data by Open-Meteo. Grounded AI by Google Gemini.'
+  },
+  hi: {
+    tagline: 'मौसम से जुड़ा कुछ भी पूछें।',
+    searchBtn: 'खोजें',
+    compareBtn: 'तुलना करें',
+    askGptBtn: 'WeatherGPT से पूछें',
+    compareTitle: 'दो शहरों के मौसम की तुलना',
+    feelsLike: 'महसूस होता है',
+    humidity: 'आर्द्रता',
+    wind: 'हवा की गति',
+    windDir: 'हवा की दिशा',
+    uv: 'यूवी इंडेक्स',
+    rain: 'बारिश',
+    sunrise: 'सूर्योदय',
+    sunset: 'सूर्यास्त',
+    radarTitle: 'इंटरएक्टिव वेदर रडार और बारिश नक्शा',
+    radarHint: 'लाइव उपग्रह वर्षा कवरेज',
+    hourlyTitle: 'प्रति घंटा पूर्वानुमान',
+    hourlyHint: '24 घंटे की प्रगति',
+    dailyTitle: '7 दिनों का पूर्वानुमान',
+    dailyHint: 'साप्ताहिक दृष्टिकोण',
+    trendsTitle: 'मौसम रुझान और विश्लेषण',
+    footer: 'ओपन-मेटियो द्वारा मौसम डेटा। गूगल जेमिनी द्वारा ग्राउंडेड एआई।'
+  },
+  bn: {
+    tagline: 'আবহাওয়া সম্পর্কিত যে কোনও প্রশ্ন করুন।',
+    searchBtn: 'অনুসন্ধান',
+    compareBtn: 'তুলনা করুন',
+    askGptBtn: 'WeatherGPT কে জিজ্ঞাসা করুন',
+    compareTitle: 'একাধিক শহরের আবহাওয়ার তুলনা',
+    feelsLike: 'অনূভূত তাপমাত্রা',
+    humidity: 'আর্দ্রতা',
+    wind: 'বাতাসের গতি',
+    windDir: 'বাতাসের দিক',
+    uv: 'ইউভি ইনডেক্স',
+    rain: 'বৃষ্টিপাত',
+    sunrise: 'সূর্যোদয়',
+    sunset: 'সূর্যাস্ত',
+    radarTitle: 'ইন্টারেক্টিভ ওয়েদার রাডার ও বৃষ্টি ম্যাপ',
+    radarHint: 'লাইভ উপগ্রহ বৃষ্টিপাতের তথ্য',
+    hourlyTitle: 'প্রতি ঘণ্টার পূর্বাভাস',
+    hourlyHint: '২৪ ঘণ্টার চিত্র',
+    dailyTitle: '৭ দিনের পূর্বাভাস',
+    dailyHint: 'সাপ্তাহিক দৃষ্টিভঙ্গি',
+    trendsTitle: 'আবহাওয়ার প্রবণতা ও বিশ্লেষণ',
+    footer: 'ওপেন-মেটিও দ্বারা আবহাওয়ার তথ্য। গুগল জেমিনি দ্বারা চালিত এআই।'
+  },
+  ta: {
+    tagline: 'வானிலை பற்றி எதுவும் கேட்கலாம்.',
+    searchBtn: 'தேடு',
+    compareBtn: 'ஒப்பிடு',
+    askGptBtn: 'WeatherGPT-யிடம் கேள்',
+    compareTitle: 'நகரங்களின் வானிலை ஒப்பீடு',
+    feelsLike: 'உணரப்படும் வெப்பநிலை',
+    humidity: 'ஈரப்பதம்',
+    wind: 'காற்றின் வேகம்',
+    windDir: 'காற்றின் திசை',
+    uv: 'புறஊதா குறியீடு',
+    rain: 'மழை',
+    sunrise: 'சூரியோதயம்',
+    sunset: 'சூரிய அஸ்தமனம்',
+    radarTitle: 'வானிலை ரேடார் மற்றும் மழை வரைபடம்',
+    radarHint: 'நேரலை செயற்கைக்கோள் மழை கவரேஜ்',
+    hourlyTitle: 'மணிநேர முன்னறிவிப்பு',
+    hourlyHint: '24 மணிநேர முன்னேற்றம்',
+    dailyTitle: '7 நாள் முன்னறிவிப்பு',
+    dailyHint: 'வாராந்திர கண்ணோட்டம்',
+    trendsTitle: 'வானிலை போக்குகள்',
+    footer: 'Open-Meteo வானிலை தரவு. Google Gemini AI.'
+  },
+  te: {
+    tagline: 'వాతావరణం గురించి ఏమైనా అడగండి.',
+    searchBtn: 'వెతకండి',
+    compareBtn: 'పోల్చండి',
+    askGptBtn: 'WeatherGPT ని అడగండి',
+    compareTitle: 'రెండు నగరాల వాతావరణ పోలిక',
+    feelsLike: 'అనిపించే ఉష్ణోగ్రత',
+    humidity: 'తేమ',
+    wind: 'గాలి వేగం',
+    windDir: 'గాలి దిశ',
+    uv: 'యువి ఇండెక్స్',
+    rain: 'వర్షం',
+    sunrise: 'సూర్యోదయం',
+    sunset: 'సూర్యాస్తమయం',
+    radarTitle: 'ఇంటరాక్టివ్ వెదర్ రాడార్ & వర్షపు మ్యాప్',
+    radarHint: 'లైవ్ శాటిలైట్ వర్షపాతం',
+    hourlyTitle: 'గంటల వారీ ముందస్తు అంచనా',
+    hourlyHint: '24 గంటల ప్రగతి',
+    dailyTitle: '7 రోజుల అంచనా',
+    dailyHint: 'వారపు అంచనా',
+    trendsTitle: 'వాతావరణ విశ్లేషణ',
+    footer: 'Open-Meteo వాతావరణ డేటా. Google Gemini AI.'
+  },
+  mr: {
+    tagline: 'हवामानाबद्दल काहीही विचारा.',
+    searchBtn: 'शोधा',
+    compareBtn: 'तुलना करा',
+    askGptBtn: 'WeatherGPT ला विचारा',
+    compareTitle: 'दोन शहरांच्या हवामानाची तुलना',
+    feelsLike: 'जाणवणारे तापमान',
+    humidity: 'आर्द्रता',
+    wind: 'वाऱ्याचा वेग',
+    windDir: 'वाऱ्याची दिशा',
+    uv: 'यूव्ही इंडेक्स',
+    rain: 'पाऊस',
+    sunrise: 'सूर्योदय',
+    sunset: 'सूर्यास्त',
+    radarTitle: 'वेदर रडार आणि पावसाचा नकाशा',
+    radarHint: 'थेट सॅटेलाइट पाऊस कव्हरेज',
+    hourlyTitle: 'तासनिहाय अंदाज',
+    hourlyHint: '२४ तासांची प्रगती',
+    dailyTitle: '७ दिवसांचा अंदाज',
+    dailyHint: 'साप्ताहिक अंदाज',
+    trendsTitle: 'हवामान ट्रेंड्स व विश्लेषण',
+    footer: 'Open-Meteo हवामान डेटा. Google Gemini AI.'
+  },
+  gu: {
+    tagline: 'હવામાન વિશે કંઈપણ પૂછો.',
+    searchBtn: 'શોધો',
+    compareBtn: 'સરખામણી કરો',
+    askGptBtn: 'WeatherGPT ને પૂછો',
+    compareTitle: 'બે શહેરોના હવામાનની સરખામણી',
+    feelsLike: 'અનુભવાતું તાપમાન',
+    humidity: 'ભેજ',
+    wind: 'પવનની ઝડપ',
+    windDir: 'પવનની દિશા',
+    uv: 'યુવી ઈન્ડેક્સ',
+    rain: 'વરસાદ',
+    sunrise: 'સૂર્યોદય',
+    sunset: 'સૂર્યાસ્ત',
+    radarTitle: 'વેધર રડાર અને વરસાદ નકશો',
+    radarHint: 'લાઈવ સેટેલાઈટ વરસાદ કવરેજ',
+    hourlyTitle: 'કલાકદીઠ આગાહી',
+    hourlyHint: '૨૪ કલાકની પ્રગતિ',
+    dailyTitle: '૭ દિવસની આગાહી',
+    dailyHint: 'સાપ્તાહિક દ્રષ્ટિકોણ',
+    trendsTitle: 'હવામાન વિશ્લેષણ',
+    footer: 'Open-Meteo ડેટા. Google Gemini AI.'
+  },
+  kn: {
+    tagline: 'ಹವಾಮಾನದ ಬಗ್ಗೆ ಏನನ್ನಾದರೂ ಕೇಳಿ.',
+    searchBtn: 'ಹುಡುಕಿ',
+    compareBtn: 'ಹೋಲಿಸಿ',
+    askGptBtn: 'WeatherGPT ಕೇಳಿ',
+    compareTitle: 'ಎರಡು ನಗರಗಳ ಹವಾಮಾನ ಹೋಲಿಕೆ',
+    feelsLike: 'ಅನಿಸುವ ತಾಪಮಾನ',
+    humidity: 'ತೇವಾಂಶ',
+    wind: 'ಗಾಳಿಯ ವೇಗ',
+    windDir: 'ಗಾಳಿಯ ದಿಕ್ಸೂಚಿ',
+    uv: 'ಯುವಿ ಇಂಡೆಕ್ಸ್',
+    rain: 'ಮಳೆ',
+    sunrise: 'ಸೂರ್ಯೋದಯ',
+    sunset: 'ಸೂರ್ಯಾಸ್ತ',
+    radarTitle: 'ವೆದರ್ ರೇಡಾರ್ & ಮಳೆ ನಕ್ಷೆ',
+    radarHint: 'ಲೈವ್ ಉಪಗ್ರಹ ಮಳೆ ಮಾಹಿತಿ',
+    hourlyTitle: 'ಗಂಟೆಯ ಮುನ್ನೋಟ',
+    hourlyHint: '24 ಗಂಟೆಗಳ ಪ್ರಗತಿ',
+    dailyTitle: '7 ದಿನಗಳ ಮುನ್ನೋಟ',
+    dailyHint: 'ವಾರದ ಮುನ್ನೋಟ',
+    trendsTitle: 'ಹವಾಮಾನ ವಿಶ್ಲೇಷಣೆ',
+    footer: 'Open-Meteo ಹವಾಮಾನ ಮಾಹಿತಿ. Google Gemini AI.'
+  },
+  pa: {
+    tagline: 'ਮੌਸਮ ਬਾਰੇ ਕੁਝ ਵੀ ਪੁੱਛੋ।',
+    searchBtn: 'ਖੋਜੋ',
+    compareBtn: 'ਤੁਲਨਾ ਕਰੋ',
+    askGptBtn: 'WeatherGPT ਨੂੰ ਪੁੱਛੋ',
+    compareTitle: 'ਦੋ ਸ਼ਹਿਰਾਂ ਦੇ ਮੌਸਮ ਦੀ ਤੁਲਨਾ',
+    feelsLike: 'ਮਹਿਸੂਸ ਹੁੰਦਾ ਹੈ',
+    humidity: 'ਨਮੀ',
+    wind: 'ਹਵਾ ਦੀ ਗਤੀ',
+    windDir: 'ਹਵਾ ਦੀ ਦਿਸ਼ਾ',
+    uv: 'ਯੂਵੀ ਇੰਡੈਕਸ',
+    rain: 'ਮੀਂਹ',
+    sunrise: 'ਸੂਰਜ ਚੜ੍ਹਨਾ',
+    sunset: 'ਸੂਰਜ ਛਿਪਣਾ',
+    radarTitle: 'ਮੌਸਮ ਰਡਾਰ ਅਤੇ ਮੀਂਹ ਦਾ ਨਕਸ਼ਾ',
+    radarHint: 'ਲਾਈਵ ਸੈਟੇਲਾਈਟ ਬਾਰਸ਼ ਕਵਰੇਜ',
+    hourlyTitle: 'ਗੰਟੇਵਾਰ ਪੂਰਵ-ਅਨੁਮਾਨ',
+    hourlyHint: '24 ਘੰਟੇ ਦੀ ਤਰੱਕੀ',
+    dailyTitle: '7 ਦਿਨਾਂ ਦਾ ਪੂਰਵ-ਅਨੁਮਾਨ',
+    dailyHint: 'ਹਫ਼ਤਾਵਾਰੀ ਦ੍ਰਿਸ਼ਟੀਕੋਣ',
+    trendsTitle: 'ਮੌਸਮ ਦੇ ਰੁਝਾਨ',
+    footer: 'Open-Meteo ਮੌਸਮ ਡੇਟਾ। Google Gemini AI.'
+  }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -47,6 +271,10 @@ document.addEventListener('DOMContentLoaded', () => {
   $('chat-form').addEventListener('submit', onChatSubmit);
 
   initSearchAutocomplete();
+  initBookmarks();
+  initLanguageSelector();
+  initComparisonHandlers();
+  initVoiceEngine();
 
   if ($('toggleGptBtn')) {
     $('toggleGptBtn').addEventListener('click', () => {
@@ -87,6 +315,421 @@ function closeAssistantWindow() {
   $('gptSidebar').classList.add('hidden');
   $('toggleGptBtn').classList.remove('active');
   $('toggleGptBtn').setAttribute('aria-expanded', 'false');
+}
+
+/* =========================================
+   Language Selector & Multilingual Support
+   ========================================= */
+function initLanguageSelector() {
+  const select = $('lang-select');
+  if (!select) return;
+
+  select.addEventListener('change', (e) => {
+    state.language = e.target.value;
+    applyLanguage(state.language);
+  });
+}
+
+function applyLanguage(lang) {
+  const dict = TRANSLATIONS[lang] || TRANSLATIONS.en;
+
+  if ($('txt-tagline')) $('txt-tagline').textContent = dict.tagline;
+  if ($('btn-search')) $('btn-search').textContent = dict.searchBtn;
+  if ($('txt-compare-btn')) $('txt-compare-btn').textContent = dict.compareBtn;
+  if ($('txt-gpt-btn')) $('txt-gpt-btn').textContent = dict.askGptBtn;
+  if ($('txt-compare-title')) $('txt-compare-title').textContent = dict.compareTitle;
+  if ($('txt-feels-like')) $('txt-feels-like').textContent = dict.feelsLike;
+  if ($('lbl-humidity')) $('lbl-humidity').textContent = dict.humidity;
+  if ($('lbl-wind')) $('lbl-wind').textContent = dict.wind;
+  if ($('lbl-wind-dir')) $('lbl-wind-dir').textContent = dict.windDir;
+  if ($('lbl-uv')) $('lbl-uv').textContent = dict.uv;
+  if ($('lbl-rain')) $('lbl-rain').textContent = dict.rain;
+  if ($('lbl-sunrise')) $('lbl-sunrise').textContent = dict.sunrise;
+  if ($('lbl-sunset')) $('lbl-sunset').textContent = dict.sunset;
+  if ($('txt-radar-title')) $('txt-radar-title').textContent = dict.radarTitle;
+  if ($('txt-radar-hint')) $('txt-radar-hint').textContent = dict.radarHint;
+  if ($('txt-hourly-title')) $('txt-hourly-title').textContent = dict.hourlyTitle;
+  if ($('txt-hourly-hint')) $('txt-hourly-hint').textContent = dict.hourlyHint;
+  if ($('txt-daily-title')) $('txt-daily-title').textContent = dict.dailyTitle;
+  if ($('txt-daily-hint')) $('txt-daily-hint').textContent = dict.dailyHint;
+  if ($('txt-trends-title')) $('txt-trends-title').textContent = dict.trendsTitle;
+  if ($('txt-footer')) $('txt-footer').textContent = dict.footer;
+
+  // Update initial welcome message if user has not engaged in chat yet
+  if (state.chatHistory.length === 0 && dict.welcome) {
+    const history = $('chat-history');
+    if (history && history.children.length === 1 && history.children[0].classList.contains('ai')) {
+      const bubble = history.children[0].querySelector('.bubble');
+      if (bubble) {
+        bubble.innerHTML = formatMarkdown(dict.welcome);
+        attachTtsButton(bubble, dict.welcome);
+      }
+    }
+  }
+}
+
+/* =========================================
+   Favorite Bookmarks & LocalStorage
+   ========================================= */
+function initBookmarks() {
+  const bookmarkBtn = $('bookmark-btn');
+  if (bookmarkBtn) {
+    bookmarkBtn.addEventListener('click', toggleBookmark);
+  }
+  renderBookmarksBar();
+}
+
+function updateBookmarkStar() {
+  const bookmarkBtn = $('bookmark-btn');
+  if (!bookmarkBtn || !state.location) return;
+
+  const isBookmarked = state.bookmarks.some(
+    (b) => b.name.toLowerCase() === state.location.name.toLowerCase()
+  );
+
+  bookmarkBtn.classList.toggle('active', isBookmarked);
+}
+
+function toggleBookmark() {
+  if (!state.location) return;
+
+  const index = state.bookmarks.findIndex(
+    (b) => b.name.toLowerCase() === state.location.name.toLowerCase()
+  );
+
+  if (index !== -1) {
+    state.bookmarks.splice(index, 1);
+    showToast(`Removed ${state.location.name} from favorites.`);
+  } else {
+    state.bookmarks.push({
+      name: state.location.name,
+      country: state.location.country,
+      latitude: state.location.latitude,
+      longitude: state.location.longitude
+    });
+    showToast(`Saved ${state.location.name} to favorites.`);
+  }
+
+  localStorage.setItem('weathergpt_bookmarks', JSON.stringify(state.bookmarks));
+  updateBookmarkStar();
+  renderBookmarksBar();
+}
+
+function renderBookmarksBar() {
+  const container = $('bookmarks-bar');
+  if (!container) return;
+
+  if (!state.bookmarks.length) {
+    container.classList.add('hidden');
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = '';
+  state.bookmarks.forEach((bm) => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'bookmark-chip';
+    chip.innerHTML = `⭐ ${bm.name} <span class="remove-bm" title="Remove">×</span>`;
+
+    chip.addEventListener('click', (e) => {
+      if (e.target.classList.contains('remove-bm')) {
+        e.stopPropagation();
+        state.bookmarks = state.bookmarks.filter((b) => b.name !== bm.name);
+        localStorage.setItem('weathergpt_bookmarks', JSON.stringify(state.bookmarks));
+        updateBookmarkStar();
+        renderBookmarksBar();
+      } else {
+        $('city-input').value = bm.name;
+        searchLocation(bm.name);
+      }
+    });
+
+    container.appendChild(chip);
+  });
+
+  container.classList.remove('hidden');
+}
+
+/* =========================================
+   Multi-Location Side-by-Side Comparison
+   ========================================= */
+function initComparisonHandlers() {
+  const toggleBtn = $('toggle-compare-btn');
+  const closeBtn = $('close-compare-btn');
+  const form = $('compare-form');
+
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const section = $('comparison-section');
+      const isHidden = section.classList.contains('hidden');
+      if (isHidden) {
+        section.classList.remove('hidden');
+        toggleBtn.classList.add('active');
+        $('compare-city-input').focus();
+        if (state.comparisonLocation) renderComparisonGrid();
+      } else {
+        section.classList.add('hidden');
+        toggleBtn.classList.remove('active');
+      }
+    });
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      $('comparison-section').classList.add('hidden');
+      if (toggleBtn) toggleBtn.classList.remove('active');
+    });
+  }
+
+  if (form) {
+    form.addEventListener('submit', onCompareSubmit);
+  }
+}
+
+async function onCompareSubmit(e) {
+  e.preventDefault();
+  const city = $('compare-city-input').value.trim();
+  if (!city) return;
+
+  try {
+    showLoading(true);
+    let loc = null;
+    try {
+      const res = await fetch(`/api/geocode?city=${encodeURIComponent(city)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.location) loc = data.location;
+      }
+    } catch (_) {}
+
+    if (!loc) {
+      const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
+      const geoData = await geoRes.json();
+      if (geoData.results && geoData.results.length > 0) {
+        const r = geoData.results[0];
+        loc = { name: r.name, country: r.country || '', latitude: r.latitude, longitude: r.longitude };
+      }
+    }
+
+    if (!loc) throw new Error(`Could not find location ${city}`);
+
+    const [wRes, fRes] = await Promise.all([
+      fetch(`/api/weather?lat=${loc.latitude}&lon=${loc.longitude}`),
+      fetch(`/api/forecast?lat=${loc.latitude}&lon=${loc.longitude}`)
+    ]);
+
+    const wData = await wRes.json();
+    const fData = await fRes.json();
+
+    if (wData.success && fData.success) {
+      state.comparisonLocation = loc;
+      state.comparisonCurrent = wData.current;
+      state.comparisonForecast = fData.forecast;
+      renderComparisonGrid();
+      showToast(`Comparing ${state.location?.name || 'Primary'} vs ${loc.name}`);
+    }
+  } catch (err) {
+    showToast(err.message || 'Failed to fetch comparison location.');
+  } finally {
+    hideLoading();
+  }
+}
+
+function renderComparisonGrid() {
+  const container = $('comparison-container');
+  if (!container || !state.location || !state.current || !state.comparisonLocation || !state.comparisonCurrent) return;
+
+  const loc1 = state.location;
+  const cur1 = state.current;
+  const loc2 = state.comparisonLocation;
+  const cur2 = state.comparisonCurrent;
+
+  container.innerHTML = `
+    <div class="compare-col">
+      <div class="compare-col-header">
+        <div>
+          <div class="compare-city-name">${loc1.name}</div>
+          <div style="font-size:0.85rem; color: var(--text-muted);">${loc1.country || ''}</div>
+        </div>
+        <div class="compare-temp-badge">${Math.round(cur1.temperature)}°C</div>
+      </div>
+      <div class="compare-metric-row"><span class="compare-metric-label">Condition</span><span class="compare-metric-val">${cur1.weatherDescription}</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">Feels Like</span><span class="compare-metric-val">${Math.round(cur1.feelsLike)}°C</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">Humidity</span><span class="compare-metric-val">${Math.round(cur1.humidity)}%</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">Wind Speed</span><span class="compare-metric-val">${cur1.windSpeed} km/h</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">Rain</span><span class="compare-metric-val">${cur1.rain || 0} mm</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">UV Index</span><span class="compare-metric-val">${cur1.uvIndex || 0}</span></div>
+    </div>
+
+    <div class="compare-col">
+      <div class="compare-col-header">
+        <div>
+          <div class="compare-city-name">${loc2.name}</div>
+          <div style="font-size:0.85rem; color: var(--text-muted);">${loc2.country || ''}</div>
+        </div>
+        <div class="compare-temp-badge" style="color: var(--accent-2);">${Math.round(cur2.temperature)}°C</div>
+      </div>
+      <div class="compare-metric-row"><span class="compare-metric-label">Condition</span><span class="compare-metric-val">${cur2.weatherDescription}</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">Feels Like</span><span class="compare-metric-val">${Math.round(cur2.feelsLike)}°C</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">Humidity</span><span class="compare-metric-val">${Math.round(cur2.humidity)}%</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">Wind Speed</span><span class="compare-metric-val">${cur2.windSpeed} km/h</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">Rain</span><span class="compare-metric-val">${cur2.rain || 0} mm</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">UV Index</span><span class="compare-metric-val">${cur2.uvIndex || 0}</span></div>
+    </div>
+  `;
+}
+
+/* =========================================
+   Interactive Leaflet Radar Map Engine
+   ========================================= */
+function updateRadarMap(lat, lon, cityName) {
+  if (typeof L === 'undefined') return;
+
+  const mapEl = $('radar-map');
+  if (!mapEl) return;
+
+  if (!radarMap) {
+    radarMap = L.map('radar-map', {
+      center: [lat, lon],
+      zoom: 7,
+      zoomControl: true,
+      attributionControl: false
+    });
+
+    // Dark basemap tiles
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 18,
+      subdomains: 'abcd'
+    }).addTo(radarMap);
+
+    // Live RainViewer Precipitation Radar Overlay
+    L.tileLayer('https://tile.cache.rainviewer.com/v2/coverage/0/256/{z}/{x}/{y}/0/0_0.png', {
+      opacity: 0.65,
+      maxZoom: 18
+    }).addTo(radarMap);
+
+    const customIcon = L.divIcon({
+      className: 'custom-map-pin',
+      html: `<div style="background:var(--accent); width:14px; height:14px; border-radius:50%; border:2px solid white; box-shadow: 0 0 10px var(--accent);"></div>`,
+      iconSize: [14, 14],
+      iconAnchor: [7, 7]
+    });
+
+    radarMarker = L.marker([lat, lon], { icon: customIcon }).addTo(radarMap);
+    radarMarker.bindPopup(`<b>${cityName}</b>`).openPopup();
+  } else {
+    radarMap.setView([lat, lon], 7, { animate: true });
+    if (radarMarker) {
+      radarMarker.setLatLng([lat, lon]);
+      radarMarker.setPopupContent(`<b>${cityName}</b>`).openPopup();
+    }
+  }
+
+  setTimeout(() => radarMap.invalidateSize(), 300);
+}
+
+/* =========================================
+   Web Speech API Voice Interaction Engine
+   ========================================= */
+function initVoiceEngine() {
+  const micBtn = $('voice-input-btn');
+  if (!micBtn) return;
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    micBtn.title = 'Speech recognition not supported in this browser';
+    return;
+  }
+
+  speechRecognizer = new SpeechRecognition();
+  speechRecognizer.continuous = false;
+  speechRecognizer.interimResults = false;
+
+  speechRecognizer.onstart = () => {
+    isVoiceListening = true;
+    micBtn.classList.add('mic-listening');
+    showToast('Listening... Speak your weather query.');
+  };
+
+  speechRecognizer.onresult = (e) => {
+    const transcript = e.results[0][0].transcript;
+    $('chat-input').value = transcript;
+    showToast(`Recognized: "${transcript}"`);
+    onChatSubmit(new Event('submit', { cancelable: true }));
+  };
+
+  speechRecognizer.onerror = (e) => {
+    isVoiceListening = false;
+    micBtn.classList.remove('mic-listening');
+    showToast(`Voice error: ${e.error}`);
+  };
+
+  speechRecognizer.onend = () => {
+    isVoiceListening = false;
+    micBtn.classList.remove('mic-listening');
+  };
+
+  micBtn.addEventListener('click', toggleVoiceInput);
+}
+
+function toggleVoiceInput() {
+  if (!speechRecognizer) {
+    showToast('Voice input is not supported in your browser.');
+    return;
+  }
+
+  if (isVoiceListening) {
+    speechRecognizer.stop();
+  } else {
+    const langLocales = {
+      en: 'en-US',
+      hi: 'hi-IN',
+      bn: 'bn-IN',
+      ta: 'ta-IN',
+      te: 'te-IN',
+      mr: 'mr-IN',
+      gu: 'gu-IN',
+      kn: 'kn-IN',
+      pa: 'pa-IN'
+    };
+    speechRecognizer.lang = langLocales[state.language] || 'en-US';
+    speechRecognizer.start();
+  }
+}
+
+function speakText(text, buttonEl) {
+  if (!('speechSynthesis' in window)) {
+    showToast('Text-to-speech not supported.');
+    return;
+  }
+
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+    if (buttonEl) buttonEl.classList.remove('tts-playing');
+    return;
+  }
+
+  const cleanText = text.replace(/<[^>]*>/g, '').replace(/\*/g, '');
+  currentSpeechUtterance = new SpeechSynthesisUtterance(cleanText);
+
+  const langLocales = {
+    en: 'en-US', hi: 'hi-IN', bn: 'bn-IN', ta: 'ta-IN', te: 'te-IN',
+    mr: 'mr-IN', gu: 'gu-IN', kn: 'kn-IN', pa: 'pa-IN'
+  };
+  currentSpeechUtterance.lang = langLocales[state.language] || 'en-US';
+
+  if (buttonEl) buttonEl.classList.add('tts-playing');
+
+  currentSpeechUtterance.onend = () => {
+    if (buttonEl) buttonEl.classList.remove('tts-playing');
+  };
+
+  currentSpeechUtterance.onerror = () => {
+    if (buttonEl) buttonEl.classList.remove('tts-playing');
+  };
+
+  window.speechSynthesis.speak(currentSpeechUtterance);
 }
 
 /* ---------- Search Autocomplete ---------- */
@@ -374,6 +1017,8 @@ function renderAllWeather() {
   renderHourlyForecast(state.forecast.hourly);
   renderDailyForecast(state.forecast.daily);
   renderCharts(state.forecast);
+  updateBookmarkStar();
+  updateRadarMap(state.location.latitude, state.location.longitude, state.location.name);
 }
 
 function showWeatherSection() {
@@ -556,7 +1201,7 @@ function renderCharts(forecast) {
   });
 }
 
-/* ---------- Chat with Real-Time SSE Token Streaming ---------- */
+/* ---------- Chat with Real-Time SSE Token Streaming & Voice Output ---------- */
 
 async function onChatSubmit(event) {
   event.preventDefault();
@@ -579,7 +1224,6 @@ async function onChatSubmit(event) {
   addChatMessage('user', message);
   input.value = '';
 
-  // Hide suggested questions after the first question is asked
   const suggestedEl = $('suggested-questions');
   if (suggestedEl) {
     suggestedEl.style.display = 'none';
@@ -594,21 +1238,28 @@ async function onChatSubmit(event) {
   let accumulatedText = '';
 
   try {
+    const payload = {
+      message,
+      location: {
+        name: state.location.name,
+        country: state.location.country,
+        latitude: state.location.latitude,
+        longitude: state.location.longitude,
+        timezone: state.location.timezone
+      },
+      language: state.language,
+      conversation: state.chatHistory.slice(0, -1),
+      weather: state.current
+    };
+
+    if (state.comparisonLocation) {
+      payload.comparisonLocation = state.comparisonLocation;
+    }
+
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message,
-        location: {
-          name: state.location.name,
-          country: state.location.country,
-          latitude: state.location.latitude,
-          longitude: state.location.longitude,
-          timezone: state.location.timezone
-        },
-        conversation: state.chatHistory.slice(0, -1),
-        weather: state.current
-      })
+      body: JSON.stringify(payload)
     });
 
     if (!response.ok) {
@@ -643,7 +1294,7 @@ async function onChatSubmit(event) {
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
-        buffer = lines.pop(); // keep uncompleted line
+        buffer = lines.pop();
 
         for (const line of lines) {
           const trimmed = line.trim();
@@ -667,8 +1318,9 @@ async function onChatSubmit(event) {
         }
       }
 
-      // Finalize message
+      // Finalize message & attach Text-to-Speech button
       streamingBubble.innerHTML = formatMarkdown(accumulatedText || 'No response generated.');
+      attachTtsButton(streamingBubble, accumulatedText);
       history.scrollTop = history.scrollHeight;
 
       if (accumulatedText) {
@@ -676,7 +1328,6 @@ async function onChatSubmit(event) {
         if (state.chatHistory.length > 10) state.chatHistory = state.chatHistory.slice(-10);
       }
     } else {
-      // Fallback non-streaming response
       const data = await response.json();
       removeTypingIndicator();
       if (!data.success || !data.answer) {
@@ -711,6 +1362,7 @@ function addChatMessage(role, text) {
   bubble.className = 'bubble';
   if (role === 'ai') {
     bubble.innerHTML = formatMarkdown(text);
+    attachTtsButton(bubble, text);
   } else {
     bubble.textContent = text;
   }
@@ -718,6 +1370,18 @@ function addChatMessage(role, text) {
   messageDiv.appendChild(bubble);
   history.appendChild(messageDiv);
   history.scrollTop = history.scrollHeight;
+}
+
+function attachTtsButton(bubbleEl, text) {
+  if (!text || !('speechSynthesis' in window)) return;
+
+  const ttsBtn = document.createElement('button');
+  ttsBtn.type = 'button';
+  ttsBtn.className = 'tts-btn';
+  ttsBtn.innerHTML = `${ICONS.speaker} <span>Listen</span>`;
+  ttsBtn.addEventListener('click', () => speakText(text, ttsBtn));
+
+  bubbleEl.appendChild(ttsBtn);
 }
 
 function formatMarkdown(text) {
@@ -790,7 +1454,7 @@ function showLoading(show = true) {
   if (section) section.classList.toggle('is-loading', show);
   if (searchBtn) {
     searchBtn.disabled = show;
-    searchBtn.textContent = show ? 'Searching...' : 'Search';
+    searchBtn.textContent = show ? 'Searching...' : (TRANSLATIONS[state.language]?.searchBtn || 'Search');
   }
 }
 

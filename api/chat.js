@@ -7,12 +7,47 @@ const {
 } = require('../lib/weather');
 const { buildLocalAdvisory, streamText } = require('../lib/advisor');
 
-const SYSTEM_PROMPT = `You are WeatherGPT, a conversational weather assistant.
+const LANGUAGE_NAMES = {
+  en: 'English',
+  hi: 'Hindi (हिन्दी)',
+  bn: 'Bengali (বাংলা)',
+  ta: 'Tamil (தமிழ்)',
+  te: 'Telugu (తెలుగు)',
+  mr: 'Marathi (मराठी)',
+  gu: 'Gujarati (ગુજરાતી)',
+  kn: 'Kannada (ಕನ್ನಡ)',
+  pa: 'Punjabi (ਪੰਜਾਬੀ)'
+};
+
+function detectLanguageFromText(text) {
+  if (!text) return null;
+  if (/[\u0900-\u097F]/.test(text)) return 'hi'; // Devanagari (Hindi/Marathi)
+  if (/[\u0980-\u09FF]/.test(text)) return 'bn'; // Bengali
+  if (/[\u0B80-\u0BFF]/.test(text)) return 'ta'; // Tamil
+  if (/[\u0C00-\u0C7F]/.test(text)) return 'te'; // Telugu
+  if (/[\u0A80-\u0AFF]/.test(text)) return 'gu'; // Gujarati
+  if (/[\u0C80-\u0CFF]/.test(text)) return 'kn'; // Kannada
+  if (/[\u0A00-\u0A7F]/.test(text)) return 'pa'; // Punjabi
+  return null;
+}
+
+function getSystemPrompt(language = 'en') {
+  const langName = LANGUAGE_NAMES[language] || 'English';
+  let prompt = `You are WeatherGPT, a conversational weather assistant.
 You must NEVER invent, guess, or assume weather information.
 Use only the provided Weather Data to answer weather questions.
 If required data is missing or unavailable, say you cannot reliably answer.
 You can give practical suggestions like carrying an umbrella, but do not provide medical, safety, or legal guarantees.
 Be concise, warm, and helpful. Use Celsius by default.`;
+
+  if (language !== 'en') {
+    prompt += `\n\nCRITICAL MULTILINGUAL MANDATE:
+The user is interacting in ${langName}. You MUST write your ENTIRE response in ${langName}.
+Translate all weather conditions, recommendations, warnings, headings, bullet points, and advice accurately into ${langName}.
+Do NOT default to English unless required for numerical measurements or non-translatable proper nouns.`;
+  }
+  return prompt;
+}
 
 async function readJsonBody(req) {
   if (req.body) {
@@ -37,7 +72,7 @@ async function readJsonBody(req) {
   return JSON.parse(body);
 }
 
-function buildWeatherContext(location, current, forecast) {
+function buildWeatherContext(location, current, forecast, comparisonContext = null) {
   const daily = forecast.daily || {};
   const dailyDates = daily.date || [];
   const todayDate = current.time ? current.time.slice(0, 10) : null;
@@ -81,41 +116,49 @@ function buildWeatherContext(location, current, forecast) {
       };
     });
 
-  return {
-    location: {
-      name: location.name,
-      country: location.country || '',
-      latitude: location.latitude,
-      longitude: location.longitude,
-      timezone: current.timezone || location.timezone || 'auto'
-    },
-    current: {
-      time: current.time,
-      temperature: current.temperature,
-      feelsLike: current.feelsLike,
-      humidity: current.humidity,
-      windSpeed: current.windSpeed,
-      windDirection: current.windDirection,
-      precipitation: current.precipitation,
-      rain: current.rain,
-      uvIndex: current.uvIndex,
-      pressure: current.pressure,
-      visibility: current.visibility,
-      weather: current.weatherDescription,
-      isDay: current.isDay,
-      sunrise: current.sunrise,
-      sunset: current.sunset
-    },
-    forecast: {
-      today,
-      tomorrow,
-      next7Days,
-      next24Hours
+  const ctx = {
+    primaryLocation: {
+      location: {
+        name: location.name,
+        country: location.country || '',
+        latitude: location.latitude,
+        longitude: location.longitude,
+        timezone: current.timezone || location.timezone || 'auto'
+      },
+      current: {
+        time: current.time,
+        temperature: current.temperature,
+        feelsLike: current.feelsLike,
+        humidity: current.humidity,
+        windSpeed: current.windSpeed,
+        windDirection: current.windDirection,
+        precipitation: current.precipitation,
+        rain: current.rain,
+        uvIndex: current.uvIndex,
+        pressure: current.pressure,
+        visibility: current.visibility,
+        weather: current.weatherDescription,
+        isDay: current.isDay,
+        sunrise: current.sunrise,
+        sunset: current.sunset
+      },
+      forecast: {
+        today,
+        tomorrow,
+        next7Days,
+        next24Hours
+      }
     }
   };
+
+  if (comparisonContext) {
+    ctx.comparisonLocation = comparisonContext;
+  }
+
+  return ctx;
 }
 
-async function streamGemini(apiKey, userMessage, conversation, weatherContext, res) {
+async function streamGemini(apiKey, userMessage, conversation, weatherContext, language, res) {
   // Build sanitized conversation history with alternating roles
   const contents = [];
   let lastRole = null;
@@ -146,6 +189,7 @@ async function streamGemini(apiKey, userMessage, conversation, weatherContext, r
   );
 
   let lastError = null;
+  const systemInstructionText = `${getSystemPrompt(language)}\n\nWeather data (source of truth):\n${JSON.stringify(weatherContext, null, 2)}`;
 
   for (const model of fallbackModels) {
     try {
@@ -160,7 +204,7 @@ async function streamGemini(apiKey, userMessage, conversation, weatherContext, r
           body: JSON.stringify({
             systemInstruction: {
               parts: [{
-                text: `${SYSTEM_PROMPT}\n\nWeather data (source of truth):\n${JSON.stringify(weatherContext, null, 2)}`
+                text: systemInstructionText
               }]
             },
             contents,
@@ -284,23 +328,46 @@ module.exports = async function handler(req, res) {
     }))
     .filter((entry) => entry.content);
 
+  let language = typeof payload.language === 'string' ? payload.language.toLowerCase() : 'en';
+  const detectedLang = detectLanguageFromText(message);
+  if (detectedLang) {
+    language = detectedLang;
+  }
+
   try {
     const current = await getCurrentWeather(coordinates.latitude, coordinates.longitude);
     const forecast = await getForecastData(coordinates.latitude, coordinates.longitude);
-    const weatherContext = buildWeatherContext(location, current, forecast);
+
+    let comparisonContext = null;
+    if (payload.comparisonLocation && payload.comparisonLocation.latitude != null && payload.comparisonLocation.longitude != null) {
+      const compCoords = validateCoordinates(payload.comparisonLocation.latitude, payload.comparisonLocation.longitude);
+      if (compCoords) {
+        try {
+          const compCurrent = await getCurrentWeather(compCoords.latitude, compCoords.longitude);
+          const compForecast = await getForecastData(compCoords.latitude, compCoords.longitude);
+          comparisonContext = {
+            location: payload.comparisonLocation,
+            current: compCurrent,
+            forecast: compForecast
+          };
+        } catch (_) {}
+      }
+    }
+
+    const weatherContext = buildWeatherContext(location, current, forecast, comparisonContext);
     const snapshot = {
-      ...weatherContext.current,
-      weatherDescription: weatherContext.current.weather,
-      rainProbability: weatherContext.forecast?.today?.precipitationProbability || 0
+      ...(weatherContext.primaryLocation?.current || {}),
+      weatherDescription: weatherContext.primaryLocation?.current?.weather,
+      rainProbability: weatherContext.primaryLocation?.forecast?.today?.precipitationProbability || 0
     };
 
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      const advisory = buildLocalAdvisory(message, location, snapshot);
+      const advisory = buildLocalAdvisory(message, location, snapshot, language);
       return streamText(res, advisory);
     }
 
-    await streamGemini(apiKey, message, conversation, weatherContext, res);
+    await streamGemini(apiKey, message, conversation, weatherContext, language, res);
   } catch (error) {
     console.error('Chat handler error:', error);
     if (!res.headersSent) {
