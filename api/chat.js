@@ -5,6 +5,7 @@ const {
   getForecastData,
   mapWeatherCode
 } = require('../lib/weather');
+const { buildLocalAdvisory, streamText } = require('../lib/advisor');
 
 const SYSTEM_PROMPT = `You are WeatherGPT, a conversational weather assistant.
 You must NEVER invent, guess, or assume weather information.
@@ -98,6 +99,8 @@ function buildWeatherContext(location, current, forecast) {
       precipitation: current.precipitation,
       rain: current.rain,
       uvIndex: current.uvIndex,
+      pressure: current.pressure,
+      visibility: current.visibility,
       weather: current.weatherDescription,
       isDay: current.isDay,
       sunrise: current.sunrise,
@@ -281,18 +284,21 @@ module.exports = async function handler(req, res) {
     }))
     .filter((entry) => entry.content);
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return sendJson(res, 500, {
-      success: false,
-      error: 'WeatherGPT is not configured with a Gemini API key.'
-    });
-  }
-
   try {
     const current = await getCurrentWeather(coordinates.latitude, coordinates.longitude);
     const forecast = await getForecastData(coordinates.latitude, coordinates.longitude);
     const weatherContext = buildWeatherContext(location, current, forecast);
+    const snapshot = {
+      ...weatherContext.current,
+      weatherDescription: weatherContext.current.weather,
+      rainProbability: weatherContext.forecast?.today?.precipitationProbability || 0
+    };
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      const advisory = buildLocalAdvisory(message, location, snapshot);
+      return streamText(res, advisory);
+    }
 
     await streamGemini(apiKey, message, conversation, weatherContext, res);
   } catch (error) {

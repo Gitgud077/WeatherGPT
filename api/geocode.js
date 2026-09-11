@@ -11,6 +11,7 @@ module.exports = async function handler(req, res) {
 
   const url = new URL(req.url, 'http://localhost');
   const city = (req.query && req.query.city) || url.searchParams.get('city');
+  const count = (req.query && req.query.count) || url.searchParams.get('count') || 1;
 
   if (!city || city.trim().length < 2) {
     return sendJson(res, 400, {
@@ -20,16 +21,20 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const location = await geocodeCity(city.trim());
+    const geocoded = await geocodeCity(city.trim(), count);
 
-    if (!location) {
+    if (!geocoded) {
       return sendJson(res, 404, {
         success: false,
         error: "We couldn't find that location."
       });
     }
 
-    return sendJson(res, 200, { success: true, location });
+    return sendJson(res, 200, {
+      success: true,
+      location: geocoded.location,
+      results: geocoded.results
+    });
   } catch (error) {
     console.error('Geocode error:', error);
     return sendJson(res, 502, {

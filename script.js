@@ -46,6 +46,23 @@ document.addEventListener('DOMContentLoaded', () => {
   $('geolocate-btn').addEventListener('click', onGeolocate);
   $('chat-form').addEventListener('submit', onChatSubmit);
 
+  initSearchAutocomplete();
+
+  if ($('toggleGptBtn')) {
+    $('toggleGptBtn').addEventListener('click', () => {
+      const isHidden = $('gptSidebar').classList.contains('hidden');
+      if (isHidden) {
+        openAssistantWindow();
+      } else {
+        closeAssistantWindow();
+      }
+    });
+  }
+
+  if ($('closeGptBtn')) {
+    $('closeGptBtn').addEventListener('click', closeAssistantWindow);
+  }
+
   document.querySelectorAll('.suggested-question').forEach((button) => {
     button.addEventListener('click', () => {
       const question = button.dataset.question;
@@ -58,6 +75,123 @@ document.addEventListener('DOMContentLoaded', () => {
 
   searchLocation('Kolkata');
 });
+
+function openAssistantWindow() {
+  $('gptSidebar').classList.remove('hidden');
+  $('toggleGptBtn').classList.add('active');
+  $('toggleGptBtn').setAttribute('aria-expanded', 'true');
+  $('chat-input').focus();
+}
+
+function closeAssistantWindow() {
+  $('gptSidebar').classList.add('hidden');
+  $('toggleGptBtn').classList.remove('active');
+  $('toggleGptBtn').setAttribute('aria-expanded', 'false');
+}
+
+/* ---------- Search Autocomplete ---------- */
+
+function initSearchAutocomplete() {
+  const input = $('city-input');
+  const list = $('search-suggestions');
+  if (!input || !list) return;
+
+  let debounceTimer = null;
+  let focusedIndex = -1;
+  let suggestions = [];
+
+  const hideSuggestions = () => {
+    list.classList.add('hidden');
+    list.innerHTML = '';
+    focusedIndex = -1;
+    suggestions = [];
+  };
+
+  const applyFocus = (idx) => {
+    const items = list.querySelectorAll('li');
+    items.forEach((el, i) => el.classList.toggle('focused', i === idx));
+  };
+
+  const selectSuggestion = (loc) => {
+    input.value = loc.name + (loc.country ? `, ${loc.country}` : '');
+    hideSuggestions();
+    searchLocation(input.value);
+  };
+
+  const renderSuggestions = (results) => {
+    list.innerHTML = '';
+    if (!results.length) {
+      hideSuggestions();
+      return;
+    }
+    suggestions = results;
+    focusedIndex = -1;
+
+    results.forEach((loc) => {
+      const li = document.createElement('li');
+      li.setAttribute('role', 'option');
+      const region = [loc.admin1, loc.country].filter(Boolean).join(', ');
+      li.innerHTML = `
+        <span class="suggestion-icon">📍</span>
+        <span class="suggestion-main">
+          <span class="suggestion-city">${loc.name}</span>
+          <span class="suggestion-region">${region}</span>
+        </span>`;
+      li.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        selectSuggestion(loc);
+      });
+      list.appendChild(li);
+    });
+    list.classList.remove('hidden');
+  };
+
+  const fetchSuggestions = async (query) => {
+    if (query.length < 2) {
+      hideSuggestions();
+      return;
+    }
+    try {
+      const res = await fetch(`/api/geocode?city=${encodeURIComponent(query)}&count=6`);
+      const data = await res.json();
+      renderSuggestions(data.results || (data.location ? [data.location] : []));
+    } catch (_) {
+      hideSuggestions();
+    }
+  };
+
+  input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => fetchSuggestions(input.value.trim()), 280);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    const items = list.querySelectorAll('li');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusedIndex = Math.min(focusedIndex + 1, items.length - 1);
+      applyFocus(focusedIndex);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusedIndex = Math.max(focusedIndex - 1, 0);
+      applyFocus(focusedIndex);
+    } else if (e.key === 'Enter' && focusedIndex >= 0) {
+      e.preventDefault();
+      selectSuggestion(suggestions[focusedIndex]);
+    } else if (e.key === 'Escape') {
+      hideSuggestions();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!input.closest('.search-wrapper')?.contains(e.target)) {
+      hideSuggestions();
+    }
+  });
+
+  input.addEventListener('blur', () => setTimeout(hideSuggestions, 150));
+}
 
 /* ---------- Location handling ---------- */
 
@@ -74,14 +208,37 @@ async function onSearch(event) {
 async function searchLocation(city) {
   showLoading(true);
   try {
-    const response = await fetch(`/api/geocode?city=${encodeURIComponent(city)}`);
-    const data = await response.json();
-
-    if (!data.success || !data.location) {
-      throw new Error(data.error || "We couldn't find that location.");
+    let loc = null;
+    try {
+      const response = await fetch(`/api/geocode?city=${encodeURIComponent(city)}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.location) loc = data.location;
+      }
+    } catch (_) {
+      // Fall through to direct fallback
     }
 
-    state.location = data.location;
+    if (!loc) {
+      const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`);
+      const geoData = await geoRes.json();
+      if (geoData.results && geoData.results.length > 0) {
+        const r = geoData.results[0];
+        loc = {
+          name: r.name,
+          country: r.country || '',
+          latitude: r.latitude,
+          longitude: r.longitude,
+          timezone: r.timezone || 'auto'
+        };
+      }
+    }
+
+    if (!loc) {
+      throw new Error("We couldn't find that location.");
+    }
+
+    state.location = loc;
     await loadWeatherData();
     showWeatherSection();
   } catch (error) {
@@ -131,25 +288,88 @@ function onGeolocate() {
 async function loadWeatherData() {
   const { latitude, longitude } = state.location;
 
-  const [weatherResponse, forecastResponse] = await Promise.all([
-    fetch(`/api/weather?lat=${latitude}&lon=${longitude}`),
-    fetch(`/api/forecast?lat=${latitude}&lon=${longitude}`)
-  ]);
+  try {
+    const [weatherResponse, forecastResponse] = await Promise.all([
+      fetch(`/api/weather?lat=${latitude}&lon=${longitude}`),
+      fetch(`/api/forecast?lat=${latitude}&lon=${longitude}`)
+    ]);
 
-  const weatherData = await weatherResponse.json();
-  const forecastData = await forecastResponse.json();
-
-  if (!weatherData.success || !weatherData.current) {
-    throw new Error(weatherData.error || 'Weather data is temporarily unavailable.');
+    if (weatherResponse.ok && forecastResponse.ok) {
+      const weatherData = await weatherResponse.json();
+      const forecastData = await forecastResponse.json();
+      if (weatherData.success && weatherData.current && forecastData.success && forecastData.forecast) {
+        state.current = weatherData.current;
+        state.forecast = forecastData.forecast;
+        renderAllWeather();
+        return;
+      }
+    }
+  } catch (_) {
+    // Fall through to direct Open-Meteo fallback
   }
 
-  if (!forecastData.success || !forecastData.forecast) {
-    throw new Error(forecastData.error || 'Forecast data is temporarily unavailable.');
+  const omUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,weather_code,uv_index,visibility&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,sunrise,sunset&timezone=auto`;
+  const omRes = await fetch(omUrl);
+  const omData = await omRes.json();
+
+  if (!omData || !omData.current) {
+    throw new Error('Weather data is temporarily unavailable.');
   }
 
-  state.current = weatherData.current;
-  state.forecast = forecastData.forecast;
+  const cur = omData.current;
+  const d = omData.daily || {};
+  const h = omData.hourly || {};
 
+  state.current = {
+    temperature: cur.temperature_2m,
+    feelsLike: cur.apparent_temperature,
+    humidity: cur.relative_humidity_2m,
+    windSpeed: cur.wind_speed_10m,
+    windDirection: cur.wind_direction_10m,
+    weatherCode: cur.weather_code,
+    weatherDescription: getWeatherText(cur.weather_code),
+    isDay: cur.is_day === 1,
+    uvIndex: h.uv_index ? h.uv_index[new Date().getHours()] || 0 : 0,
+    maxUvIndex: d.uv_index_max ? d.uv_index_max[0] : 0,
+    rain: cur.precipitation || 0,
+    sunrise: d.sunrise ? d.sunrise[0] : '',
+    sunset: d.sunset ? d.sunset[0] : '',
+    time: cur.time
+  };
+
+  state.forecast = {
+    hourly: {
+      time: h.time || [],
+      temperature: h.temperature_2m || [],
+      weatherCode: h.weather_code || [],
+      precipitationProbability: h.precipitation_probability || []
+    },
+    daily: {
+      date: d.time || [],
+      maxTemperature: d.temperature_2m_max || [],
+      minTemperature: d.temperature_2m_min || [],
+      weatherCode: d.weather_code || [],
+      precipitationProbability: d.precipitation_probability_max || []
+    }
+  };
+
+  renderAllWeather();
+}
+
+function getWeatherText(code) {
+  const descriptions = {
+    0: "Clear Sky", 1: "Mainly Clear", 2: "Partly Cloudy", 3: "Overcast",
+    45: "Foggy", 48: "Depositing Rime Fog",
+    51: "Light Drizzle", 53: "Moderate Drizzle", 55: "Dense Drizzle",
+    61: "Slight Rain", 63: "Moderate Rain", 65: "Heavy Rain",
+    71: "Slight Snow", 73: "Moderate Snow", 75: "Heavy Snow",
+    80: "Light Rain Showers", 81: "Moderate Rain Showers", 82: "Violent Rain Showers",
+    95: "Thunderstorm", 96: "Thunderstorm with Hail", 99: "Heavy Thunderstorm with Hail"
+  };
+  return descriptions[code] || "Clear Sky";
+}
+
+function renderAllWeather() {
   renderCurrentWeather(state.current);
   renderHourlyForecast(state.forecast.hourly);
   renderDailyForecast(state.forecast.daily);
@@ -386,7 +606,8 @@ async function onChatSubmit(event) {
           longitude: state.location.longitude,
           timezone: state.location.timezone
         },
-        conversation: state.chatHistory.slice(0, -1)
+        conversation: state.chatHistory.slice(0, -1),
+        weather: state.current
       })
     });
 

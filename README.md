@@ -1,17 +1,17 @@
 # WeatherGPT
 
-Conversational weather assistant using Open-Meteo for weather data and Google Gemini for chat.
+Standalone Node.js weather app for Vercel: Open-Meteo for weather, Google Gemini for chat (with a local advisory fallback).
 
 ## Setup
 
-1. Get a Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey).
+1. Get a Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey) (optional; chat still works with the local advisor).
 2. Install dependencies:
 
 	```bash
 	npm install
 	```
 
-3. Create a local `.env` file from `.env.example` and set `GEMINI_API_KEY` to your API key. (Never commit `.env`).
+3. Create a local `.env` file from `.env.example` and set `GEMINI_API_KEY`. Never commit `.env`.
 4. Start the local development server:
 
 	```bash
@@ -20,33 +20,32 @@ Conversational weather assistant using Open-Meteo for weather data and Google Ge
 
 5. Open `http://localhost:3000` in your browser.
 
-## Vercel Deployment (Step-by-Step)
+## Vercel Deployment
 
-1. Push your changes to your GitHub repository (`main` branch).
-2. In the [Vercel Dashboard](https://vercel.com/dashboard), click **"Add New..."** → **"Project"**.
-3. Import your GitHub repository (`WeatherGPT`).
-4. In **Project Settings**:
-   - **Framework Preset**: Other
-   - **Root Directory**: `./` (default)
-5. Expand **Environment Variables** and add:
-   - `GEMINI_API_KEY`: Your Google AI Studio API key
-   - `GEMINI_MODEL`: `gemini-3.6-flash` (optional, defaults to `gemini-3.6-flash`)
-6. Click **Deploy**.
+1. Push the repo to GitHub.
+2. Import the project in the [Vercel Dashboard](https://vercel.com/dashboard).
+3. Framework Preset: Other. Root Directory: `./`.
+4. Add environment variables:
+   - `GEMINI_API_KEY`: Google AI Studio key
+   - `GEMINI_MODEL`: `gemini-3.6-flash` (optional)
+5. Deploy.
 
 ## Directory Layout
 
 ```text
-index.html        # Main dashboard UI
-script.js         # Frontend logic & Chart.js rendering
-style.css         # Modern dark-mode styling
-vercel.json       # Vercel deployment configuration
+index.html        # Dashboard UI
+script.js         # Frontend logic, autocomplete, assistant drawer
+style.css         # Dark glass styling
+logo.png          # Brand asset
+server.js         # Local static + API server
+vercel.json       # Vercel config
 api/
-  chat.js         # Conversational AI endpoint (Gemini + Open-Meteo context)
-  weather.js      # Current weather endpoint
-  forecast.js     # 7-day & hourly forecast endpoint
-  geocode.js      # City geocoding endpoint
+  chat.js         # Gemini chat + local advisory fallback
+  weather.js      # Current weather
+  forecast.js     # Hourly + 7-day forecast
+  geocode.js      # City search / autocomplete
 lib/
-  http.js         # HTTP and CORS helpers
-  weather.js      # Open-Meteo client & data parser
-package.json
+  http.js         # CORS helpers
+  weather.js      # Open-Meteo client
+  advisor.js      # Keyword weather advisories (no Gemini required)
 ```
