@@ -583,6 +583,49 @@ function renderComparisonGrid() {
 /* =========================================
    Interactive Leaflet Radar Map Engine
    ========================================= */
+let rainLayer = null;
+let lastRadarFetchTime = 0;
+
+async function syncRainViewerLayer() {
+  if (!radarMap) return;
+  // Cache for 5 minutes so we don't repeat API calls on rapid searches
+  if (rainLayer && Date.now() - lastRadarFetchTime < 5 * 60 * 1000) return;
+
+  try {
+    const res = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+    if (!res.ok) throw new Error(`RainViewer API status: ${res.status}`);
+    const data = await res.json();
+
+    if (data.radar && data.radar.past && data.radar.past.length > 0) {
+      const host = data.host || 'https://tilecache.rainviewer.com';
+      const latestFrame = data.radar.past[data.radar.past.length - 1];
+      // Color scheme 2 (Universal Blue), 1 (smooth), 1 (snow layer enabled)
+      const tileUrl = `${host}${latestFrame.path}/256/{z}/{x}/{y}/2/1_1.png`;
+
+      if (rainLayer && radarMap.hasLayer(rainLayer)) {
+        radarMap.removeLayer(rainLayer);
+      }
+
+      rainLayer = L.tileLayer(tileUrl, {
+        opacity: 0.75,
+        maxZoom: 18,
+        zIndex: 10
+      }).addTo(radarMap);
+
+      lastRadarFetchTime = Date.now();
+    }
+  } catch (err) {
+    console.warn('Unable to fetch live RainViewer radar frames:', err);
+    if (!rainLayer) {
+      rainLayer = L.tileLayer('https://tilecache.rainviewer.com/v2/coverage/0/256/{z}/{x}/{y}/0/0_0.png', {
+        opacity: 0.5,
+        maxZoom: 18,
+        zIndex: 10
+      }).addTo(radarMap);
+    }
+  }
+}
+
 function updateRadarMap(lat, lon, cityName) {
   if (typeof L === 'undefined') return;
 
@@ -597,16 +640,14 @@ function updateRadarMap(lat, lon, cityName) {
       attributionControl: false
     });
 
-    // Dark basemap tiles
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 18,
-      subdomains: 'abcd'
+    // Clean, high-performance dark basemap tiles (No API key or watermark required)
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 16
     }).addTo(radarMap);
 
-    // Live RainViewer Precipitation Radar Overlay
-    L.tileLayer('https://tile.cache.rainviewer.com/v2/coverage/0/256/{z}/{x}/{y}/0/0_0.png', {
-      opacity: 0.65,
-      maxZoom: 18
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 16,
+      opacity: 0.7
     }).addTo(radarMap);
 
     const customIcon = L.divIcon({
@@ -625,6 +666,9 @@ function updateRadarMap(lat, lon, cityName) {
       radarMarker.setPopupContent(`<b>${cityName}</b>`).openPopup();
     }
   }
+
+  // Load / refresh the live precipitation layer
+  syncRainViewerLayer();
 
   setTimeout(() => radarMap.invalidateSize(), 300);
 }
