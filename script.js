@@ -292,6 +292,16 @@ document.addEventListener('DOMContentLoaded', () => {
     $('closeGptBtn').addEventListener('click', closeAssistantWindow);
   }
 
+  if ($('gptBackdrop')) {
+    $('gptBackdrop').addEventListener('click', closeAssistantWindow);
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && $('gptSidebar') && !$('gptSidebar').classList.contains('hidden')) {
+      closeAssistantWindow();
+    }
+  });
+
   document.querySelectorAll('.suggested-question').forEach((button) => {
     button.addEventListener('click', () => {
       const question = button.dataset.question;
@@ -306,16 +316,34 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function openAssistantWindow() {
-  $('gptSidebar').classList.remove('hidden');
-  $('toggleGptBtn').classList.add('active');
-  $('toggleGptBtn').setAttribute('aria-expanded', 'true');
-  $('chat-input').focus();
+  const sidebar = $('gptSidebar');
+  const backdrop = $('gptBackdrop');
+  if (sidebar) sidebar.classList.remove('hidden');
+  if (backdrop) backdrop.classList.remove('hidden');
+  document.body.classList.add('drawer-open');
+  if ($('toggleGptBtn')) {
+    $('toggleGptBtn').classList.add('active');
+    $('toggleGptBtn').setAttribute('aria-expanded', 'true');
+  }
+  const chatInput = $('chat-input');
+  if (chatInput) chatInput.focus();
+
+  const history = $('chat-history');
+  if (history) {
+    setTimeout(() => { history.scrollTop = history.scrollHeight; }, 100);
+  }
 }
 
 function closeAssistantWindow() {
-  $('gptSidebar').classList.add('hidden');
-  $('toggleGptBtn').classList.remove('active');
-  $('toggleGptBtn').setAttribute('aria-expanded', 'false');
+  const sidebar = $('gptSidebar');
+  const backdrop = $('gptBackdrop');
+  if (sidebar) sidebar.classList.add('hidden');
+  if (backdrop) backdrop.classList.add('hidden');
+  document.body.classList.remove('drawer-open');
+  if ($('toggleGptBtn')) {
+    $('toggleGptBtn').classList.remove('active');
+    $('toggleGptBtn').setAttribute('aria-expanded', 'false');
+  }
 }
 
 /* =========================================
@@ -1945,9 +1973,10 @@ class WeatherCanvas {
     this.reducedMotion = mediaQuery.matches;
     mediaQuery.addEventListener('change', (e) => {
       this.reducedMotion = e.matches;
-      if (!this.reducedMotion && this.isActive) this.loop();
+      if (!this.reducedMotion && this.isActive) this.loop(0);
     });
 
+    this.lastFrameTime = 0;
     this.init();
   }
 
@@ -1956,11 +1985,11 @@ class WeatherCanvas {
     window.addEventListener('resize', () => this.resize());
     document.addEventListener('visibilitychange', () => {
       this.isActive = !document.hidden;
-      if (this.isActive && !this.reducedMotion) this.loop();
+      if (this.isActive && !this.reducedMotion) this.loop(performance.now());
     });
 
     this.createParticles();
-    this.loop();
+    this.loop(performance.now());
   }
 
   resize() {
@@ -2002,24 +2031,27 @@ class WeatherCanvas {
     this.particles = [];
     this.shootingStars = [];
     this.clouds = [];
-    const count = Math.floor((this.width * this.height) / 10000);
+    const isMobile = this.width < 768;
+    const baseCount = Math.floor((this.width * this.height) / (isMobile ? 18000 : 10000));
 
     if (this.weatherType === 'clear-day') {
-      for (let i = 0; i < Math.min(count + 25, 60); i++) {
+      const dayCount = isMobile ? 20 : Math.min(baseCount + 25, 60);
+      for (let i = 0; i < dayCount; i++) {
         this.particles.push({
           x: Math.random() * this.width,
           y: Math.random() * this.height,
-          size: Math.random() * 4.5 + 1.2,
-          speedY: -(Math.random() * 0.5 + 0.15),
+          size: Math.random() * 4 + 1.2,
+          speedY: -(Math.random() * 0.4 + 0.15),
           speedX: (Math.random() - 0.5) * 0.4,
-          alpha: Math.random() * 0.7 + 0.2,
+          alpha: Math.random() * 0.6 + 0.2,
           pulseSpeed: Math.random() * 0.025 + 0.01,
           pulse: Math.random() * Math.PI * 2,
           hue: Math.random() > 0.4 ? 'rgba(254, 240, 138, ' : 'rgba(251, 191, 36, '
         });
       }
     } else if (this.weatherType === 'clear-night') {
-      for (let i = 0; i < Math.min(count * 2 + 50, 160); i++) {
+      const starCount = isMobile ? 60 : Math.min(baseCount * 2 + 50, 150);
+      for (let i = 0; i < starCount; i++) {
         const starType = Math.random();
         let color = 'rgba(255, 255, 255, ';
         if (starType > 0.7) color = 'rgba(165, 180, 252, ';
@@ -2028,55 +2060,64 @@ class WeatherCanvas {
         this.particles.push({
           x: Math.random() * this.width,
           y: Math.random() * this.height,
-          size: Math.random() * 2.2 + 0.5,
-          alpha: Math.random() * 0.85 + 0.15,
+          size: Math.random() * 2 + 0.5,
+          alpha: Math.random() * 0.8 + 0.2,
           twinkleSpeed: Math.random() * 0.035 + 0.008,
           phase: Math.random() * Math.PI * 2,
           color
         });
       }
     } else if (this.weatherType === 'rain' || this.weatherType === 'thunderstorm') {
-      const rainCount = this.weatherType === 'thunderstorm' ? 150 : 100;
+      const rainCount = isMobile ? 50 : (this.weatherType === 'thunderstorm' ? 140 : 90);
       for (let i = 0; i < rainCount; i++) {
         this.particles.push({
           x: Math.random() * (this.width + 200) - 100,
           y: Math.random() * this.height,
-          length: Math.random() * 28 + 16,
-          speedY: Math.random() * 14 + 18,
-          speedX: -(Math.random() * 3 + 2),
-          thickness: Math.random() * 1.6 + 0.8,
-          alpha: Math.random() * 0.5 + 0.25
+          length: Math.random() * 26 + 14,
+          speedY: Math.random() * 12 + 16,
+          speedX: -(Math.random() * 2.5 + 1.5),
+          thickness: Math.random() * 1.5 + 0.8,
+          alpha: Math.random() * 0.45 + 0.2
         });
       }
     } else if (this.weatherType === 'snow') {
-      for (let i = 0; i < 90; i++) {
+      const snowCount = isMobile ? 40 : 80;
+      for (let i = 0; i < snowCount; i++) {
         this.particles.push({
           x: Math.random() * this.width,
           y: Math.random() * this.height,
-          radius: Math.random() * 3.5 + 1,
-          speedY: Math.random() * 1.4 + 0.5,
-          speedX: Math.random() * 0.6 - 0.3,
-          swing: Math.random() * 2.5 + 1.2,
+          radius: Math.random() * 3 + 1,
+          speedY: Math.random() * 1.2 + 0.4,
+          speedX: Math.random() * 0.5 - 0.25,
+          swing: Math.random() * 2.2 + 1.0,
           swingSpeed: Math.random() * 0.02 + 0.01,
           angle: Math.random() * Math.PI * 2,
-          alpha: Math.random() * 0.75 + 0.25
+          alpha: Math.random() * 0.7 + 0.2
         });
       }
     } else if (this.weatherType === 'clouds') {
-      for (let i = 0; i < 18; i++) {
+      const cloudCount = isMobile ? 8 : 14;
+      for (let i = 0; i < cloudCount; i++) {
         this.clouds.push({
-          x: Math.random() * (this.width + 600) - 300,
-          y: Math.random() * (this.height * 0.8),
-          radius: Math.random() * 220 + 140,
-          speedX: Math.random() * 0.35 + 0.1,
-          alpha: Math.random() * 0.1 + 0.04
+          x: Math.random() * (this.width + 500) - 250,
+          y: Math.random() * (this.height * 0.75),
+          radius: Math.random() * 200 + 120,
+          speedX: Math.random() * 0.3 + 0.08,
+          alpha: Math.random() * 0.08 + 0.03
         });
       }
     }
   }
 
-  loop() {
+  loop(timestamp) {
     if (!this.isActive) return;
+
+    // Cap at ~60fps (16ms frame budget) to avoid rendering overhead
+    if (timestamp && timestamp - this.lastFrameTime < 15) {
+      this.animationFrame = requestAnimationFrame((t) => this.loop(t));
+      return;
+    }
+    this.lastFrameTime = timestamp || performance.now();
 
     this.time += 0.016;
     this.ctx.clearRect(0, 0, this.width, this.height);
@@ -2103,7 +2144,7 @@ class WeatherCanvas {
     }
 
     if (!this.reducedMotion) {
-      this.animationFrame = requestAnimationFrame(() => this.loop());
+      this.animationFrame = requestAnimationFrame((t) => this.loop(t));
     }
   }
 
