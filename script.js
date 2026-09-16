@@ -275,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initLanguageSelector();
   initComparisonHandlers();
   initVoiceEngine();
+  initWeatherAlerts();
 
   if ($('toggleGptBtn')) {
     $('toggleGptBtn').addEventListener('click', () => {
@@ -1056,6 +1057,358 @@ function getWeatherText(code) {
   return descriptions[code] || "Clear Sky";
 }
 
+/* =========================================
+   Two-Tier Weather Alert Engine
+   ========================================= */
+
+function initWeatherAlerts() {
+  const dismissBtn = $('dismiss-severe-alert');
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', dismissSevereAlert);
+  }
+
+  const mildPopup = $('mild-alert-popup');
+  if (mildPopup) {
+    mildPopup.addEventListener('click', dismissMildAlert);
+  }
+}
+
+let mildAlertTimeout = null;
+let mildAlertQueue = [];
+let isMildAlertShowing = false;
+let lastAlertSignature = '';
+
+/**
+ * Evaluates current weather data and triggers appropriate alerts.
+ * Severity classification:
+ *   CRITICAL/SEVERE → persistent top banner (red)
+ *   HIGH            → persistent top banner (orange)
+ *   MODERATE/MILD   → auto-dismiss popup (6-8 sec)
+ *   INFO            → auto-dismiss popup with blue style
+ */
+function evaluateWeatherAlerts(current, location) {
+  if (!current) return;
+
+  const temp = current.temperature;
+  const feels = current.feelsLike;
+  const wind = current.windSpeed;
+  const humidity = current.humidity;
+  const uv = current.uvIndex;
+  const rain = current.rain || 0;
+  const code = current.weatherCode;
+  const cityName = location?.name || 'your area';
+
+  const severeAlerts = [];
+  const mildAlerts = [];
+
+  // --- SEVERE / CRITICAL tier checks ---
+
+  // Extreme Heat (≥45°C)
+  if (typeof temp === 'number' && temp >= 45) {
+    severeAlerts.push({
+      level: 'critical',
+      title: '🔴 Extreme Heat Emergency',
+      msg: `Temperature in ${cityName} has reached ${Math.round(temp)}°C (feels like ${Math.round(feels)}°C). Stay indoors, hydrate constantly, and avoid all outdoor activity. Risk of heatstroke is very high.`,
+      icon: '🌡️'
+    });
+  }
+
+  // Thunderstorm with Hail (WMO 96, 99)
+  if (code === 96 || code === 99) {
+    severeAlerts.push({
+      level: 'critical',
+      title: '⛈️ Severe Thunderstorm & Hail',
+      msg: `${cityName} is experiencing a thunderstorm with hail. Seek shelter immediately. Avoid open areas, tall structures, and driving through flooded roads.`,
+      icon: '⛈️'
+    });
+  }
+
+  // Thunderstorm (WMO 95)
+  if (code === 95 && !severeAlerts.length) {
+    severeAlerts.push({
+      level: 'critical',
+      title: '⛈️ Thunderstorm Warning',
+      msg: `Active thunderstorm in ${cityName}. Stay indoors and away from windows. Unplug sensitive electronics and avoid water bodies.`,
+      icon: '⛈️'
+    });
+  }
+
+  // Severe winds (≥60 km/h)
+  if (typeof wind === 'number' && wind >= 60) {
+    severeAlerts.push({
+      level: 'critical',
+      title: '💨 Severe Wind Alert',
+      msg: `Wind speeds in ${cityName} have reached ${wind} km/h. Risk of fallen trees, flying debris, and structural damage. Avoid unnecessary travel.`,
+      icon: '💨'
+    });
+  }
+
+  // Violent Rain Showers (WMO 82)
+  if (code === 82 || rain >= 10) {
+    severeAlerts.push({
+      level: 'critical',
+      title: '🌊 Heavy Rain / Flood Risk',
+      msg: `Intense rainfall of ${rain} mm recorded in ${cityName}. Flash flood risk is elevated. Avoid low-lying areas and waterlogged streets.`,
+      icon: '🌊'
+    });
+  }
+
+  // Extreme UV (≥11)
+  if (typeof uv === 'number' && uv >= 11) {
+    severeAlerts.push({
+      level: 'critical',
+      title: '☀️ Extreme UV Radiation',
+      msg: `UV Index in ${cityName} is ${uv} (Extreme). Avoid sun exposure between 10 AM–4 PM. Full protective clothing, SPF 50+, and UV-blocking sunglasses required.`,
+      icon: '☀️'
+    });
+  }
+
+  // --- HIGH tier (orange banner) ---
+
+  // Very Hot (40-44°C)
+  if (typeof temp === 'number' && temp >= 40 && temp < 45 && !severeAlerts.some(a => a.title.includes('Heat'))) {
+    severeAlerts.push({
+      level: 'high',
+      title: '🟠 Extreme Heat Warning',
+      msg: `Temperature in ${cityName} is ${Math.round(temp)}°C (feels like ${Math.round(feels)}°C). Limit outdoor activity between 11 AM and 3 PM. Stay hydrated and watch for signs of heat exhaustion.`,
+      icon: '🌡️'
+    });
+  }
+
+  // Strong winds (40-59 km/h)
+  if (typeof wind === 'number' && wind >= 40 && wind < 60 && !severeAlerts.some(a => a.title.includes('Wind'))) {
+    severeAlerts.push({
+      level: 'high',
+      title: '🟠 Strong Wind Warning',
+      msg: `Wind speed of ${wind} km/h in ${cityName}. Secure loose outdoor items. Cyclists and motorcyclists should exercise caution.`,
+      icon: '💨'
+    });
+  }
+
+  // Heavy rain (5-9 mm)
+  if (rain >= 5 && rain < 10 && !severeAlerts.some(a => a.title.includes('Rain') || a.title.includes('Flood'))) {
+    severeAlerts.push({
+      level: 'high',
+      title: '🟠 Heavy Rain Alert',
+      msg: `Precipitation of ${rain} mm in ${cityName}. Carry an umbrella and be cautious of slippery roads. Localised waterlogging possible.`,
+      icon: '🌧️'
+    });
+  }
+
+  // Very High UV (8-10)
+  if (typeof uv === 'number' && uv >= 8 && uv < 11 && !severeAlerts.some(a => a.title.includes('UV'))) {
+    severeAlerts.push({
+      level: 'high',
+      title: '🟠 Very High UV Alert',
+      msg: `UV Index is ${uv} in ${cityName}. Apply SPF 50+ sunscreen, wear a hat, and limit midday sun exposure.`,
+      icon: '☀️'
+    });
+  }
+
+  // Dense Rime Fog (WMO 48)
+  if (code === 48) {
+    severeAlerts.push({
+      level: 'high',
+      title: '🟠 Dense Fog — Low Visibility',
+      msg: `Dense depositing rime fog in ${cityName}. Visibility is dangerously low. Drive slowly with headlights on and avoid highways if possible.`,
+      icon: '🌫️'
+    });
+  }
+
+  // --- MILD / ADVISORY tier checks (popup, 6-8 sec) ---
+
+  // Hot weather advisory (35-39°C)
+  if (typeof temp === 'number' && temp >= 35 && temp < 40 && !severeAlerts.some(a => a.title.includes('Heat'))) {
+    mildAlerts.push({
+      level: 'warning',
+      title: 'Heat Advisory',
+      msg: `It's ${Math.round(temp)}°C in ${cityName}. Stay hydrated and wear light clothing. Avoid prolonged outdoor activity.`,
+      icon: '🌡️'
+    });
+  }
+
+  // Moderate UV advisory (6-7)
+  if (typeof uv === 'number' && uv >= 6 && uv < 8 && !severeAlerts.some(a => a.title.includes('UV'))) {
+    mildAlerts.push({
+      level: 'warning',
+      title: 'High UV Advisory',
+      msg: `UV Index is ${uv} in ${cityName}. Sunscreen SPF 30+ recommended for extended outdoor exposure.`,
+      icon: '🕶️'
+    });
+  }
+
+  // Moderate wind advisory (25-39 km/h)
+  if (typeof wind === 'number' && wind >= 25 && wind < 40 && !severeAlerts.some(a => a.title.includes('Wind'))) {
+    mildAlerts.push({
+      level: 'warning',
+      title: 'Wind Advisory',
+      msg: `Winds of ${wind} km/h in ${cityName}. Outdoor activities are fine but secure loose items and use caution with umbrellas.`,
+      icon: '💨'
+    });
+  }
+
+  // High humidity advisory (≥85%)
+  if (typeof humidity === 'number' && humidity >= 85 && typeof temp === 'number' && temp >= 28) {
+    mildAlerts.push({
+      level: 'warning',
+      title: 'Humidity Advisory',
+      msg: `Humidity is ${Math.round(humidity)}% with ${Math.round(temp)}°C in ${cityName}. Muggy conditions — stay hydrated and wear breathable clothing.`,
+      icon: '💧'
+    });
+  }
+
+  // Light/moderate rain advisory (WMO 51-55, 61-63, 80-81)
+  if ([51, 53, 55, 61, 63, 80, 81].includes(code) && !severeAlerts.some(a => a.title.includes('Rain') || a.title.includes('Flood'))) {
+    mildAlerts.push({
+      level: 'info',
+      title: 'Rain Advisory',
+      msg: `${current.weatherDescription} in ${cityName}. Carry an umbrella if heading out. Roads may be slippery.`,
+      icon: '🌧️'
+    });
+  }
+
+  // Fog advisory (WMO 45)
+  if (code === 45 && !severeAlerts.some(a => a.title.includes('Fog'))) {
+    mildAlerts.push({
+      level: 'info',
+      title: 'Fog Advisory',
+      msg: `Foggy conditions in ${cityName}. Reduced visibility — drive carefully with low-beam headlights.`,
+      icon: '🌫️'
+    });
+  }
+
+  // Drizzle advisory (WMO 51-57)
+  if (code >= 51 && code <= 57 && !mildAlerts.some(a => a.title === 'Rain Advisory')) {
+    // already handled above for 51,53,55
+  }
+
+  // Snow advisory (WMO 71-77, 85-86)
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) {
+    mildAlerts.push({
+      level: 'info',
+      title: 'Snowfall Advisory',
+      msg: `${current.weatherDescription} in ${cityName}. Roads may be icy — drive with caution and dress warmly.`,
+      icon: '❄️'
+    });
+  }
+
+  // Build a signature to prevent re-firing the same alerts on re-render
+  const sig = JSON.stringify({ s: severeAlerts.map(a => a.title), m: mildAlerts.map(a => a.title) });
+  if (sig === lastAlertSignature) return;
+  lastAlertSignature = sig;
+
+  // Display the highest priority severe alert as a banner
+  if (severeAlerts.length > 0) {
+    const top = severeAlerts[0];
+    showSevereAlert(top.title, top.msg, top.level);
+  } else {
+    // No severe conditions — dismiss any existing banner
+    const banner = $('severe-alert-banner');
+    if (banner && !banner.classList.contains('hidden')) {
+      dismissSevereAlert();
+    }
+  }
+
+  // Queue mild alerts
+  if (mildAlerts.length > 0) {
+    mildAlertQueue = [...mildAlerts];
+    if (!isMildAlertShowing) {
+      showNextMildAlert();
+    }
+  }
+}
+
+function showSevereAlert(title, message, level) {
+  const banner = $('severe-alert-banner');
+  if (!banner) return;
+
+  $('severe-alert-title').textContent = title;
+  $('severe-alert-msg').textContent = message;
+
+  // Reset classes
+  banner.classList.remove('hidden', 'dismissing', 'level-high');
+  if (level === 'high') {
+    banner.classList.add('level-high');
+  }
+
+  document.body.classList.add('has-severe-alert');
+
+  // Re-trigger animation
+  banner.style.animation = 'none';
+  banner.offsetHeight; // force reflow
+  banner.style.animation = '';
+}
+
+function dismissSevereAlert() {
+  const banner = $('severe-alert-banner');
+  if (!banner || banner.classList.contains('hidden')) return;
+
+  banner.classList.add('dismissing');
+  setTimeout(() => {
+    banner.classList.add('hidden');
+    banner.classList.remove('dismissing', 'level-high');
+    document.body.classList.remove('has-severe-alert');
+  }, 400);
+}
+
+function showMildAlert(title, message, icon, level) {
+  const popup = $('mild-alert-popup');
+  if (!popup) return;
+
+  isMildAlertShowing = true;
+
+  $('mild-alert-title').textContent = title;
+  $('mild-alert-msg').textContent = message;
+  $('mild-alert-icon').textContent = icon || '⚠️';
+
+  // Reset classes
+  popup.classList.remove('hidden', 'dismissing', 'level-info');
+  if (level === 'info') {
+    popup.classList.add('level-info');
+  }
+
+  // Re-trigger animations
+  popup.style.animation = 'none';
+  const timer = $('mild-alert-timer');
+  if (timer) timer.style.animation = 'none';
+  popup.offsetHeight; // force reflow
+  popup.style.animation = '';
+  if (timer) timer.style.animation = '';
+
+  clearTimeout(mildAlertTimeout);
+  mildAlertTimeout = setTimeout(() => {
+    dismissMildAlert();
+  }, 7000); // 7 seconds (in the 6-8 sec range)
+}
+
+function dismissMildAlert() {
+  const popup = $('mild-alert-popup');
+  if (!popup || popup.classList.contains('hidden')) return;
+
+  clearTimeout(mildAlertTimeout);
+  popup.classList.add('dismissing');
+
+  setTimeout(() => {
+    popup.classList.add('hidden');
+    popup.classList.remove('dismissing', 'level-info');
+    isMildAlertShowing = false;
+
+    // Show next alert in queue after a brief pause
+    if (mildAlertQueue.length > 0) {
+      setTimeout(showNextMildAlert, 600);
+    }
+  }, 350);
+}
+
+function showNextMildAlert() {
+  if (mildAlertQueue.length === 0) {
+    isMildAlertShowing = false;
+    return;
+  }
+  const next = mildAlertQueue.shift();
+  showMildAlert(next.title, next.msg, next.icon, next.level);
+}
+
 function renderAllWeather() {
   renderCurrentWeather(state.current);
   renderHourlyForecast(state.forecast.hourly);
@@ -1063,6 +1416,7 @@ function renderAllWeather() {
   renderCharts(state.forecast);
   updateBookmarkStar();
   updateRadarMap(state.location.latitude, state.location.longitude, state.location.name);
+  evaluateWeatherAlerts(state.current, state.location);
 }
 
 function showWeatherSection() {

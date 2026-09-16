@@ -12,6 +12,32 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- Two-Tier Weather Alert System -->
+  <div id="severe-alert-banner" class="severe-alert-banner hidden" role="alert" aria-live="assertive">
+    <div class="severe-alert-inner">
+      <div class="severe-alert-icon" aria-hidden="true">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+      </div>
+      <div class="severe-alert-content">
+        <strong class="severe-alert-title" id="severe-alert-title">Severe Weather Alert</strong>
+        <p class="severe-alert-msg" id="severe-alert-msg">--</p>
+      </div>
+      <button type="button" id="dismiss-severe-alert" class="severe-alert-dismiss" aria-label="Dismiss alert">
+        <svg class="svg-icon" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="severe-alert-progress" id="severe-alert-progress"></div>
+  </div>
+
+  <div id="mild-alert-popup" class="mild-alert-popup hidden" role="status" aria-live="polite">
+    <div class="mild-alert-icon" id="mild-alert-icon" aria-hidden="true">⚠️</div>
+    <div class="mild-alert-content">
+      <strong class="mild-alert-title" id="mild-alert-title">Weather Advisory</strong>
+      <p class="mild-alert-msg" id="mild-alert-msg">--</p>
+    </div>
+    <div class="mild-alert-timer" id="mild-alert-timer"></div>
+  </div>
+
   <canvas id="weather-canvas" class="weather-canvas" aria-hidden="true"></canvas>
   <div class="ambient-glow" aria-hidden="true"></div>
   <div class="app">

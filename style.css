@@ -1046,6 +1046,316 @@ a:focus-visible {
 }
 
 /* =========================================
+   Two-Tier Weather Alert System
+   ========================================= */
+
+/* --- Tier 1: Severe / Critical Alert Banner (Top-Pinned) --- */
+.severe-alert-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+  background: linear-gradient(135deg, #991b1b 0%, #dc2626 40%, #b91c1c 100%);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15);
+  box-shadow:
+    0 4px 24px rgba(220, 38, 38, 0.5),
+    0 0 60px rgba(220, 38, 38, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  animation: severe-slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  overflow: hidden;
+}
+
+.severe-alert-banner.hidden {
+  display: none !important;
+}
+
+@keyframes severe-slide-in {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes severe-slide-out {
+  from { transform: translateY(0); opacity: 1; }
+  to   { transform: translateY(-100%); opacity: 0; }
+}
+
+.severe-alert-banner.dismissing {
+  animation: severe-slide-out 0.4s ease-in forwards;
+}
+
+.severe-alert-inner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.severe-alert-icon {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #fef2f2;
+  animation: severe-icon-pulse 2s ease-in-out infinite;
+}
+
+@keyframes severe-icon-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.3); }
+  50%      { transform: scale(1.08); box-shadow: 0 0 20px 4px rgba(255, 255, 255, 0.15); }
+}
+
+.severe-alert-icon .svg-icon {
+  width: 22px;
+  height: 22px;
+  stroke: #fef2f2;
+  fill: rgba(254, 242, 242, 0.25);
+}
+
+.severe-alert-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.severe-alert-title {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fef2f2;
+  margin-bottom: 2px;
+}
+
+.severe-alert-msg {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: rgba(254, 242, 242, 0.9);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.severe-alert-dismiss {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(254, 242, 242, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.severe-alert-dismiss:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+.severe-alert-dismiss .svg-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.severe-alert-progress {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.35);
+  animation: none;
+}
+
+/* Orange variant for high-priority (not extreme) */
+.severe-alert-banner.level-high {
+  background: linear-gradient(135deg, #92400e 0%, #d97706 40%, #b45309 100%);
+  box-shadow:
+    0 4px 24px rgba(217, 119, 6, 0.5),
+    0 0 60px rgba(217, 119, 6, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.severe-alert-banner.level-high .severe-alert-icon {
+  color: #fffbeb;
+}
+
+.severe-alert-banner.level-high .severe-alert-icon .svg-icon {
+  stroke: #fffbeb;
+  fill: rgba(255, 251, 235, 0.25);
+}
+
+.severe-alert-banner.level-high .severe-alert-title,
+.severe-alert-banner.level-high .severe-alert-msg {
+  color: #fffbeb;
+}
+
+.severe-alert-banner.level-high .severe-alert-msg {
+  color: rgba(255, 251, 235, 0.9);
+}
+
+
+/* --- Tier 2: Mild / Advisory Popup (Bottom-Right Float) --- */
+.mild-alert-popup {
+  position: fixed;
+  bottom: 28px;
+  right: 24px;
+  z-index: 9000;
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  background: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: 18px;
+  padding: 18px 20px 14px;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.45),
+    0 0 30px rgba(251, 191, 36, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
+  animation: mild-slide-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  overflow: hidden;
+}
+
+.mild-alert-popup.hidden {
+  display: none !important;
+}
+
+@keyframes mild-slide-in {
+  from { transform: translateX(110%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes mild-slide-out {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(110%); opacity: 0; }
+}
+
+.mild-alert-popup.dismissing {
+  animation: mild-slide-out 0.35s ease-in forwards;
+}
+
+.mild-alert-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.mild-alert-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.mild-alert-title {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fbbf24;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 3px;
+}
+
+.mild-alert-msg {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.mild-alert-timer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  transform-origin: left;
+  animation: mild-timer-shrink 7s linear forwards;
+  border-radius: 0 0 18px 18px;
+}
+
+@keyframes mild-timer-shrink {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* Blue info variant for low-priority advisories */
+.mild-alert-popup.level-info {
+  border-color: rgba(56, 189, 248, 0.35);
+  box-shadow:
+    0 16px 48px rgba(0, 0, 0, 0.45),
+    0 0 30px rgba(56, 189, 248, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.mild-alert-popup.level-info .mild-alert-icon {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.mild-alert-popup.level-info .mild-alert-title {
+  color: #38bdf8;
+}
+
+.mild-alert-popup.level-info .mild-alert-timer {
+  background: linear-gradient(90deg, #38bdf8, #7dd3fc);
+}
+
+/* Push body content down when severe banner is visible */
+body.has-severe-alert .app {
+  padding-top: 90px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .severe-alert-inner {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .severe-alert-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .severe-alert-title {
+    font-size: 0.82rem;
+  }
+
+  .severe-alert-msg {
+    font-size: 0.8rem;
+  }
+
+  .mild-alert-popup {
+    right: 12px;
+    left: 12px;
+    bottom: 16px;
+    width: auto;
+    max-width: none;
+  }
+}
+
+/* =========================================
    Phase 2: Header Actions, Language & Bookmarks
    ========================================= */
 .header-actions {
