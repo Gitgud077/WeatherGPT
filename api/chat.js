@@ -33,12 +33,9 @@ function detectLanguageFromText(text) {
 
 function getSystemPrompt(language = 'en') {
   const langName = LANGUAGE_NAMES[language] || 'English';
-  let prompt = `You are WeatherGPT, a conversational weather assistant.
-You must NEVER invent, guess, or assume weather information.
-Use only the provided Weather Data to answer weather questions.
-If required data is missing or unavailable, say you cannot reliably answer.
-You can give practical suggestions like carrying an umbrella, but do not provide medical, safety, or legal guarantees.
-Be concise, warm, and helpful. Use Celsius by default.`;
+  let prompt = `You are WeatherGPT, an intelligent, conversational weather assistant powered by AI.
+You provide detailed, insightful, and natural weather explanations, recommendations, clothing advice, outdoor activity planning, and agricultural insights based on the provided weather data.
+Be concise, warm, knowledgeable, and helpful. Use Celsius by default. Do not invent weather data outside the source of truth provided.`;
 
   if (language !== 'en') {
     prompt += `\n\nCRITICAL MULTILINGUAL MANDATE:
@@ -183,8 +180,8 @@ async function streamGemini(apiKey, userMessage, conversation, weatherContext, l
     contents.push({ role: 'user', parts: [{ text: userMessage }] });
   }
 
-  const primaryModel = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
-  const fallbackModels = [primaryModel, 'gemini-3.7-flash', 'gemini-flash-latest'].filter(
+  const primaryModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+  const fallbackModels = [primaryModel, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].filter(
     (m, idx, arr) => arr.indexOf(m) === idx
   );
 
@@ -358,7 +355,8 @@ module.exports = async function handler(req, res) {
     const snapshot = {
       ...(weatherContext.primaryLocation?.current || {}),
       weatherDescription: weatherContext.primaryLocation?.current?.weather,
-      rainProbability: weatherContext.primaryLocation?.forecast?.today?.precipitationProbability || 0
+      rainProbability: weatherContext.primaryLocation?.forecast?.today?.precipitationProbability || 0,
+      forecast: weatherContext.primaryLocation?.forecast
     };
 
     const apiKey = process.env.GEMINI_API_KEY;
