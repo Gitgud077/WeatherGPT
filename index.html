@@ -164,6 +164,55 @@
           </div>
         </div>
 
+        <!-- Air Quality Index (AQI) Intelligence Module -->
+        <section class="card secondary-card aqi-card">
+          <div class="card-header">
+            <div class="header-title-flex">
+              <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 14 16H2"/></svg>
+              <h3>Air Quality Index (AQI)</h3>
+            </div>
+            <span id="aqi-badge" class="aqi-badge status-good">Good (US AQI)</span>
+          </div>
+
+          <div class="aqi-main-layout">
+            <div class="aqi-score-box">
+              <div id="aqi-score" class="aqi-score-val">--</div>
+              <div id="aqi-status" class="aqi-score-lbl">US AQI</div>
+            </div>
+
+            <div class="aqi-advice-box">
+              <p id="aqi-advice" class="aqi-advice-text">Loading live air quality data...</p>
+            </div>
+          </div>
+
+          <div class="pollutants-grid">
+            <div class="pollutant-chip">
+              <span class="pollutant-name">PM2.5</span>
+              <span id="aqi-pm25" class="pollutant-val">-- µg/m³</span>
+            </div>
+            <div class="pollutant-chip">
+              <span class="pollutant-name">PM10</span>
+              <span id="aqi-pm10" class="pollutant-val">-- µg/m³</span>
+            </div>
+            <div class="pollutant-chip">
+              <span class="pollutant-name">NO₂</span>
+              <span id="aqi-no2" class="pollutant-val">-- µg/m³</span>
+            </div>
+            <div class="pollutant-chip">
+              <span class="pollutant-name">SO₂</span>
+              <span id="aqi-so2" class="pollutant-val">-- µg/m³</span>
+            </div>
+            <div class="pollutant-chip">
+              <span class="pollutant-name">Ozone (O₃)</span>
+              <span id="aqi-o3" class="pollutant-val">-- µg/m³</span>
+            </div>
+            <div class="pollutant-chip">
+              <span class="pollutant-name">CO</span>
+              <span id="aqi-co" class="pollutant-val">-- µg/m³</span>
+            </div>
+          </div>
+        </section>
+
         <!-- Interactive Weather Radar & Precipitation Layer Map -->
         <section class="card secondary-card radar-card">
           <div class="card-header">
@@ -190,6 +239,78 @@
             <span class="card-hint" id="txt-daily-hint">Weekly outlook</span>
           </div>
           <div id="daily-container" class="daily-grid"></div>
+        </section>
+
+        <!-- Multi-Model Forecast & Probable Decision Engine -->
+        <section class="card secondary-card multimodel-card">
+          <div class="card-header">
+            <div class="header-title-flex">
+              <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
+              <h3>Multi-Model Ensemble &amp; Decision Engine</h3>
+            </div>
+            <span id="model-consensus-score" class="consensus-badge">Evaluating Consensus...</span>
+          </div>
+
+          <!-- Probable Decisions Grid -->
+          <div class="decisions-container">
+            <h4 class="decisions-title">Probable AI Recommendations (Multi-Model Grounded)</h4>
+            <div class="decisions-grid">
+              <div class="decision-card" id="dec-card-fitness">
+                <div class="decision-icon">🏃</div>
+                <div class="decision-content">
+                  <div class="decision-label">Outdoor Fitness &amp; Sports</div>
+                  <div class="decision-val" id="dec-fitness">Evaluating...</div>
+                </div>
+              </div>
+              <div class="decision-card" id="dec-card-rain">
+                <div class="decision-icon">☔</div>
+                <div class="decision-content">
+                  <div class="decision-label">Rain Risk / Outdoor Event</div>
+                  <div class="decision-val" id="dec-rain">Evaluating...</div>
+                </div>
+              </div>
+              <div class="decision-card" id="dec-card-laundry">
+                <div class="decision-icon">🧺</div>
+                <div class="decision-content">
+                  <div class="decision-label">Laundry &amp; Sun Drying</div>
+                  <div class="decision-val" id="dec-laundry">Evaluating...</div>
+                </div>
+              </div>
+              <div class="decision-card" id="dec-card-mask">
+                <div class="decision-icon">😷</div>
+                <div class="decision-content">
+                  <div class="decision-label">Health &amp; Pollution Action</div>
+                  <div class="decision-val" id="dec-mask">Evaluating...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Probable Synthesized Model Forecast Summary -->
+          <div class="probable-summary-box">
+            <div class="probable-item">
+              <span class="probable-label">Probable Max Temp</span>
+              <span id="probable-temp" class="probable-val">--°C</span>
+            </div>
+            <div class="probable-item">
+              <span class="probable-label">Model Variance / Spread</span>
+              <span id="probable-spread" class="probable-val">±--°C</span>
+            </div>
+            <div class="probable-item">
+              <span class="probable-label">Probable Rain Sum</span>
+              <span id="probable-precip" class="probable-val">-- mm</span>
+            </div>
+            <div class="probable-item">
+              <span class="probable-label">Rain Model Consensus</span>
+              <span id="probable-agreement" class="probable-val">--%</span>
+            </div>
+          </div>
+
+          <!-- Model Comparison Grid -->
+          <div class="model-comparison-wrapper">
+            <h4 class="decisions-title">Live Individual Meteorological Model Breakdown (IMD, NOAA GFS, ECMWF, ICON, GEM, ARPEGE)</h4>
+            <div id="multimodel-container" class="multimodel-grid"></div>
+          </div>
         </section>
 
         <section class="card secondary-card">

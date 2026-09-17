@@ -37,7 +37,9 @@ function getApiHandler(pathname) {
     '/api/weather': './api/weather',
     '/api/forecast': './api/forecast',
     '/api/geocode': './api/geocode',
-    '/api/chat': './api/chat'
+    '/api/chat': './api/chat',
+    '/api/aqi': './api/aqi',
+    '/api/multimodel': './api/multimodel'
   };
 
   const target = routeMap[pathname];

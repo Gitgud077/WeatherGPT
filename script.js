@@ -6,6 +6,8 @@ const state = {
   location: null,
   current: null,
   forecast: null,
+  aqi: null,
+  multimodel: null,
   chatHistory: [],
   language: 'en',
   bookmarks: JSON.parse(localStorage.getItem('weathergpt_bookmarks') || '[]'),
@@ -1005,17 +1007,25 @@ async function loadWeatherData() {
   const { latitude, longitude } = state.location;
 
   try {
-    const [weatherResponse, forecastResponse] = await Promise.all([
+    const [weatherResponse, forecastResponse, aqiResponse, mmResponse] = await Promise.all([
       fetch(`/api/weather?lat=${latitude}&lon=${longitude}`),
-      fetch(`/api/forecast?lat=${latitude}&lon=${longitude}`)
+      fetch(`/api/forecast?lat=${latitude}&lon=${longitude}`),
+      fetch(`/api/aqi?lat=${latitude}&lon=${longitude}`),
+      fetch(`/api/multimodel?lat=${latitude}&lon=${longitude}`)
     ]);
 
     if (weatherResponse.ok && forecastResponse.ok) {
       const weatherData = await weatherResponse.json();
       const forecastData = await forecastResponse.json();
+      const aqiData = aqiResponse.ok ? await aqiResponse.json() : null;
+      const mmData = mmResponse.ok ? await mmResponse.json() : null;
+
       if (weatherData.success && weatherData.current && forecastData.success && forecastData.forecast) {
         state.current = weatherData.current;
         state.forecast = forecastData.forecast;
+        if (aqiData && aqiData.success) state.aqi = aqiData.aqi;
+        if (mmData && mmData.success) state.multimodel = mmData.multimodel;
+
         renderAllWeather();
         return;
       }
@@ -1024,6 +1034,7 @@ async function loadWeatherData() {
     // Fall through to direct Open-Meteo fallback
   }
 
+  // Standalone client fallback for direct Open-Meteo requests
   const omUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,precipitation,weather_code,surface_pressure,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,weather_code,uv_index,visibility&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,sunrise,sunset&timezone=auto`;
   const omRes = await fetch(omUrl);
   const omData = await omRes.json();
@@ -1068,6 +1079,60 @@ async function loadWeatherData() {
       precipitationProbability: d.precipitation_probability_max || []
     }
   };
+
+  // Fallback direct AQI request
+  try {
+    const aqiRes = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitude}&longitude=${longitude}&current=us_aqi,pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,sulphur_dioxide,ozone,dust&timezone=auto`);
+    if (aqiRes.ok) {
+      const aqiJson = await aqiRes.json();
+      const ac = aqiJson.current || {};
+      const score = ac.us_aqi ? Math.round(ac.us_aqi) : null;
+      let status = 'Good', level = 'good', advice = 'Air quality is satisfactory.';
+      if (score > 50 && score <= 100) { status = 'Moderate'; level = 'moderate'; advice = 'Acceptable air quality. Sensitive people take care.'; }
+      else if (score > 100 && score <= 150) { status = 'Unhealthy for Sensitive Groups'; level = 'sensitive'; advice = 'Sensitive groups wear a mask outdoors.'; }
+      else if (score > 150 && score <= 200) { status = 'Unhealthy'; level = 'unhealthy'; advice = 'Limit outdoor exertion and wear N95 mask.'; }
+      else if (score > 200) { status = 'Hazardous'; level = 'hazardous'; advice = 'Remain indoors with air purifiers.'; }
+
+      state.aqi = {
+        usAqi: score,
+        status, level, advice,
+        pollutants: {
+          pm25: ac.pm2_5, pm10: ac.pm10, no2: ac.nitrogen_dioxide,
+          so2: ac.sulphur_dioxide, o3: ac.ozone, co: ac.carbon_monoxide
+        }
+      };
+    }
+  } catch (_) {}
+
+  // Fallback direct Multi-Model request
+  try {
+    const mmRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&models=gfs_seamless,ecmwf_ifs025,icon_seamless,gem_seamless&daily=temperature_2m_max,precipitation_sum,wind_speed_10m_max,weather_code&timezone=auto&forecast_days=1`);
+    if (mmRes.ok) {
+      const mmJson = await mmRes.json();
+      const md = mmJson.daily || {};
+      const models = [
+        { id: 'gfs', name: 'GFS (NOAA USA)', tempMax: md.temperature_2m_max_gfs_seamless?.[0], precip: md.precipitation_sum_gfs_seamless?.[0], windSpeed: md.wind_speed_10m_max_gfs_seamless?.[0], weatherCode: md.weather_code_gfs_seamless?.[0] },
+        { id: 'ecmwf', name: 'ECMWF (Europe)', tempMax: md.temperature_2m_max_ecmwf_ifs025?.[0], precip: md.precipitation_sum_ecmwf_ifs025?.[0], windSpeed: md.wind_speed_10m_max_ecmwf_ifs025?.[0], weatherCode: md.weather_code_ecmwf_ifs025?.[0] },
+        { id: 'icon', name: 'ICON (DWD Germany)', tempMax: md.temperature_2m_max_icon_seamless?.[0], precip: md.precipitation_sum_icon_seamless?.[0], windSpeed: md.wind_speed_10m_max_icon_seamless?.[0], weatherCode: md.weather_code_icon_seamless?.[0] },
+        { id: 'gem', name: 'GEM (Canada)', tempMax: md.temperature_2m_max_gem_seamless?.[0], precip: md.precipitation_sum_gem_seamless?.[0], windSpeed: md.wind_speed_10m_max_gem_seamless?.[0], weatherCode: md.weather_code_gem_seamless?.[0] }
+      ].map(m => ({ ...m, description: getWeatherText(m.weatherCode || 0) }));
+
+      const validTemps = models.map(m => m.tempMax).filter(v => v != null);
+      const validPrecips = models.map(m => m.precip).filter(v => v != null);
+      const tempSpread = validTemps.length >= 2 ? Math.round((Math.max(...validTemps) - Math.min(...validTemps)) * 10) / 10 : 0;
+      const rainCount = validPrecips.filter(p => p > 0.5).length;
+      const rainPercentage = validPrecips.length ? Math.round((rainCount / validPrecips.length) * 100) : 0;
+
+      let confidenceScore = 95;
+      if (tempSpread > 2.5) confidenceScore -= 15;
+      if (tempSpread > 4) confidenceScore -= 20;
+
+      state.multimodel = {
+        models,
+        consensus: { tempSpread, rainPercentage, confidenceScore: Math.max(60, confidenceScore) }
+      };
+    }
+  } catch (_) {}
 
   renderAllWeather();
 }
@@ -1439,12 +1504,115 @@ function showNextMildAlert() {
 
 function renderAllWeather() {
   renderCurrentWeather(state.current);
+  renderAqiSection(state.aqi);
   renderHourlyForecast(state.forecast.hourly);
   renderDailyForecast(state.forecast.daily);
   renderCharts(state.forecast);
+  renderMultiModelSection(state.multimodel);
+  renderDecisionEngine(state.current, state.multimodel, state.aqi);
   updateBookmarkStar();
   updateRadarMap(state.location.latitude, state.location.longitude, state.location.name);
   evaluateWeatherAlerts(state.current, state.location);
+}
+
+/* ---------- AQI Section Rendering ---------- */
+function renderAqiSection(aqi) {
+  if (!aqi) return;
+
+  const scoreEl = $('aqi-score');
+  const statusEl = $('aqi-status');
+  const badgeEl = $('aqi-badge');
+  const adviceEl = $('aqi-advice');
+
+  if (scoreEl) scoreEl.textContent = aqi.usAqi != null ? Math.round(aqi.usAqi) : '--';
+  if (statusEl) statusEl.textContent = `${aqi.status || 'US AQI'} Index`;
+  if (adviceEl) adviceEl.textContent = aqi.advice || 'Live air quality data updated.';
+
+  if (badgeEl) {
+    badgeEl.textContent = `${aqi.status || 'Good'} (US AQI)`;
+    badgeEl.className = `aqi-badge status-${aqi.level || 'good'}`;
+  }
+
+  const pol = aqi.pollutants || {};
+  if ($('aqi-pm25')) $('aqi-pm25').textContent = pol.pm25 != null ? `${pol.pm25} µg/m³` : '--';
+  if ($('aqi-pm10')) $('aqi-pm10').textContent = pol.pm10 != null ? `${pol.pm10} µg/m³` : '--';
+  if ($('aqi-no2')) $('aqi-no2').textContent = pol.no2 != null ? `${pol.no2} µg/m³` : '--';
+  if ($('aqi-so2')) $('aqi-so2').textContent = pol.so2 != null ? `${pol.so2} µg/m³` : '--';
+  if ($('aqi-o3')) $('aqi-o3').textContent = pol.o3 != null ? `${pol.o3} µg/m³` : '--';
+  if ($('aqi-co')) $('aqi-co').textContent = pol.co != null ? `${pol.co} µg/m³` : '--';
+}
+
+/* ---------- Multi-Model Forecast & Decision Engine ---------- */
+function renderMultiModelSection(multimodel) {
+  const container = $('multimodel-container');
+  const consensusEl = $('model-consensus-score');
+  if (!multimodel || !multimodel.models) return;
+
+  const cons = multimodel.consensus || {};
+  if (consensusEl) {
+    const score = cons.confidenceScore || 95;
+    consensusEl.textContent = `${score}% Model Consensus Agreement`;
+  }
+
+  // Populate Probable Synthesized Forecast Summary
+  if ($('probable-temp')) $('probable-temp').textContent = cons.probableTempMax != null ? `${Math.round(cons.probableTempMax)}°C` : '--°C';
+  if ($('probable-spread')) $('probable-spread').textContent = cons.tempSpread != null ? `±${cons.tempSpread}°C` : '±0°C';
+  if ($('probable-precip')) $('probable-precip').textContent = cons.probablePrecip != null ? `${cons.probablePrecip} mm` : '0 mm';
+  if ($('probable-agreement')) $('probable-agreement').textContent = cons.rainPercentage != null ? `${cons.rainPercentage}%` : '--%';
+
+  // Populate Live Individual Model Predictions Grid
+  if (container) {
+    container.innerHTML = '';
+    multimodel.models.forEach((m) => {
+      const card = document.createElement('div');
+      card.className = 'model-card';
+      card.innerHTML = `
+        <div class="model-header">
+          <span class="model-name">${m.name}</span>
+          <span class="model-temp">${m.tempMax != null ? `${Math.round(m.tempMax)}°C` : '--'}</span>
+        </div>
+        <div class="model-row"><span class="model-row-label">Condition</span><span class="model-row-val">${m.description}</span></div>
+        <div class="model-row"><span class="model-row-label">Rain Sum</span><span class="model-row-val">${m.precip != null ? `${m.precip} mm` : '0 mm'}</span></div>
+        <div class="model-row"><span class="model-row-label">Max Wind</span><span class="model-row-val">${m.windSpeed != null ? `${Math.round(m.windSpeed)} km/h` : '--'}</span></div>
+      `;
+      container.appendChild(card);
+    });
+  }
+}
+
+function renderDecisionEngine(current, multimodel, aqi) {
+  if (!current) return;
+
+  const temp = current.temperature || 25;
+  const rain = current.rain || 0;
+  const wind = current.windSpeed || 10;
+  const usAqi = aqi?.usAqi || 40;
+  const cons = multimodel?.consensus || {};
+
+  // 1. Fitness & Outdoor Activity Decision
+  let fitnessDec = 'Highly Favorable — Great conditions for outdoor running & sports.';
+  if (temp >= 36) fitnessDec = 'Exercise Caution — High thermal stress. Hydrate & avoid peak afternoon sun.';
+  else if (rain >= 3) fitnessDec = 'Indoor Workout Suggested — Rain showers active outdoors.';
+  else if (usAqi > 120) fitnessDec = 'Reduce Outdoor Exertion — Air quality is degraded for cardio workouts.';
+  if ($('dec-fitness')) $('dec-fitness').textContent = fitnessDec;
+
+  // 2. Rain & Outdoor Event Risk Decision
+  let rainDec = 'Low Risk — Dry conditions predicted across ensemble models.';
+  if (cons.rainPercentage >= 75 || rain >= 5) rainDec = 'High Rain Risk — Multiple models confirm precipitation. Carry umbrella!';
+  else if (cons.rainPercentage >= 25 || rain > 0) rainDec = 'Moderate Rain Risk — Scattered light showers possible. Have a backup plan.';
+  if ($('dec-rain')) $('dec-rain').textContent = rainDec;
+
+  // 3. Laundry & Sun Drying Decision
+  let laundryDec = 'Optimal Drying — Warm temperatures & fair breezes.';
+  if (rain > 0.5 || cons.rainPercentage >= 50) laundryDec = 'Indoor Drying Advised — High likelihood of wet clothes outdoors.';
+  else if (current.humidity >= 85) laundryDec = 'Slow Drying Speed — High relative humidity in ambient air.';
+  if ($('dec-laundry')) $('dec-laundry').textContent = laundryDec;
+
+  // 4. Health & Mask Action Decision
+  let maskDec = 'Clear Air — No protective mask required for general public.';
+  if (usAqi > 200) maskDec = 'N95 Mask Mandatory — Severe pollution alert. Keep windows closed.';
+  else if (usAqi > 100) maskDec = 'N95 Mask Recommended — Sensitive groups & asthmatics take precaution.';
+  if ($('dec-mask')) $('dec-mask').textContent = maskDec;
 }
 
 function showWeatherSection() {
