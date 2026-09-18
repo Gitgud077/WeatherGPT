@@ -3,7 +3,7 @@
 
 ---
 
-# Project Name: RituGPT (formerly WeatherGPT)
+# Project Name: RituGPT
 ### Subtitle: Grounded Conversational Weather Intelligence, Multi-Model Meteorological Ensemble & Air Quality Decision Platform
 **Document Version:** 3.0.0  
 **Target Event:** Smart India Hackathon 2026  
