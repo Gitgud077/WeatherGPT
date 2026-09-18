@@ -33,15 +33,22 @@ function detectLanguageFromText(text) {
 
 function getSystemPrompt(language = 'en') {
   const langName = LANGUAGE_NAMES[language] || 'English';
-  let prompt = `You are RituGPT, an intelligent, conversational weather assistant powered by AI.
+  let prompt = `You are RituGPT, an intelligent, warm, and friendly conversational weather assistant powered by AI.
 You provide detailed, insightful, and natural weather explanations, recommendations, clothing advice, outdoor activity planning, and agricultural insights based on the provided weather data.
 Be concise, warm, knowledgeable, and helpful. Use Celsius by default. Do not invent weather data outside the source of truth provided.`;
 
-  if (language !== 'en') {
+  if (language === 'bn') {
+    prompt += `\n\nCRITICAL BENGALI CONVERSATIONAL & DIALECT MANDATE:
+- You MUST write your ENTIRE response in natural, warm, fluent, conversational Bengali (চলতি বাংলা / কথ্য রূপ).
+- Speak like a friendly local Bengalee meteorologist companion talking to a close friend or neighbor in Bengal/Kolkata.
+- Use authentic conversational Bengali expressions and warm greetings (যেমন: "আজকে কিন্তু আবহাওয়া একটু খামখেয়ালী থাকতে পারে!", "বিকেলে একটু বৃষ্টির ছাট আসতে পারে, তাই সাথে ছাতা রাখাই বুদ্ধিমানের কাজ হবে", "ভ্যাপসা গরম থাকবে, তাই জল খাওয়াটা খুব দরকার!", "আর কোনো দরকার লাগলে তো আমি আছিই!").
+- Translate all weather conditions accurately into everyday conversational Bengali (e.g. 'Mainly Clear' -> 'বেশিরভাগ সময় মেঘমুক্ত পরিষ্কার আকাশ', 'Partly Cloudy' -> 'আংশিক মেঘলা আকাশ', 'Overcast' -> 'ঘন মেঘে ঢাকা আকাশ', 'Rain Showers' -> 'ঝমঝম বৃষ্টি / বৃষ্টির সম্ভাবনা').
+- Do NOT use robotic literal machine translations or rigid template structures. Keep it warm, expressive, engaging, and friendly!`;
+  } else if (language !== 'en') {
     prompt += `\n\nCRITICAL MULTILINGUAL MANDATE:
 The user is interacting in ${langName}. You MUST write your ENTIRE response in ${langName}.
 Translate all weather conditions, recommendations, warnings, headings, bullet points, and advice accurately into ${langName}.
-Do NOT default to English unless required for numerical measurements or non-translatable proper nouns.`;
+Do NOT default to English unless required for numerical measurements or non-translatable proper nouns. Write naturally in the target language script.`;
   }
   return prompt;
 }
@@ -180,15 +187,14 @@ async function streamGemini(apiKey, userMessage, conversation, weatherContext, l
     contents.push({ role: 'user', parts: [{ text: userMessage }] });
   }
 
-  const primaryModel = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+  const primaryModel = process.env.GEMINI_MODEL || 'gemini-flash-latest';
   const fallbackModels = [
     primaryModel,
-    'gemini-3.6-flash',
+    'gemini-flash-latest',
+    'gemini-flash-lite-latest',
     'gemini-3.5-flash',
-    'gemini-3.5-flash-lite',
-    'gemini-3.1-flash-lite',
-    'gemini-3.8-flash',
-    'gemini-3.7-flash'
+    'gemini-2.5-flash',
+    'gemini-pro-latest'
   ].filter((m, idx, arr) => arr.indexOf(m) === idx);
 
   let lastError = null;
@@ -400,11 +406,10 @@ module.exports = async function handler(req, res) {
       return streamText(res, advisory);
     }
 
-    await streamGemini(apiKey, message, conversation, weatherContext, language, res);
     try {
       await streamGemini(apiKey, message, conversation, weatherContext, language, res);
     } catch (geminiError) {
-      console.warn('Gemini stream failed or rate-limited, engaging fail-safe local advisor:', geminiError.message);
+      console.warn('Gemini stream failed or rate-limited, engaging fail-safe local advisor:', geminiError.message || geminiError);
       if (!res.headersSent) {
         const advisory = buildLocalAdvisory(message, location, snapshot, language);
         return streamText(res, advisory);

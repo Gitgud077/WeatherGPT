@@ -114,6 +114,7 @@ const TRANSLATIONS = {
     chatPlaceholder: "Ask anything about the weather...",
     today: "Today",
     tomorrow: "Tomorrow",
+    welcome: '**Hello!** I am RituGPT, powered by Google Gemini. Search for any location or ask me anything about the forecast, outdoor activities, or what to wear today.'
   },
   hi: {
     tagline: 'मौसम से जुड़ा कुछ भी पूछें।',
@@ -177,6 +178,7 @@ const TRANSLATIONS = {
     chatPlaceholder: "मौसम के बारे में कुछ भी पूछें...",
     today: "आज",
     tomorrow: "कल",
+    welcome: '**नमस्ते!** मैं RituGPT हूँ, Google Gemini द्वारा संचालित। मौसम के पूर्वानुमान, बाहरी गतिविधियों या आज पहने जाने वाले कपड़ों के बारे में कुछ भी पूछें।'
   },
   bn: {
     tagline: 'আবহাওয়া সম্পর্কিত যে কোনও প্রশ্ন করুন।',
@@ -240,6 +242,7 @@ const TRANSLATIONS = {
     chatPlaceholder: "আবহাওয়া সম্পর্কে যা কিছু জিজ্ঞাসা করুন...",
     today: "আজ",
     tomorrow: "আগামীকাল",
+    welcome: '**নমস্কার!** আমি RituGPT, Google Gemini দ্বারা চালিত। আবহাওয়ার তথ্য, বাইরের কাজকর্ম বা আজকের পোশাকের পরামর্শ জানতে যেকোনো স্থান খুঁজুন বা আমাকে প্রশ্ন করুন।'
   },
   ta: {
     tagline: 'வானிலை பற்றி எதுவும் கேட்கலாம்.',
@@ -1593,26 +1596,94 @@ function toggleVoiceInput() {
   }
 }
 
+let currentAudioPlayer = null;
+
 function speakText(text, buttonEl) {
+  const cleanText = String(text || '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/\[DONE\]/g, '')
+    .replace(/[\*\#\_\`\~\-\•]/g, ' ')
+    .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleanText) return;
+
+  if (window.speechSynthesis && window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+  }
+
+  if (currentAudioPlayer) {
+    currentAudioPlayer.pause();
+    currentAudioPlayer.currentTime = 0;
+    currentAudioPlayer = null;
+    document.querySelectorAll('.tts-btn').forEach(btn => btn.classList.remove('tts-playing'));
+    if (buttonEl && buttonEl._isPlaying) {
+      buttonEl._isPlaying = false;
+      return;
+    }
+  }
+
+  const lang = state.language || 'bn';
+  const ttsUrl = `/api/tts?lang=${encodeURIComponent(lang)}&text=${encodeURIComponent(cleanText.slice(0, 800))}`;
+
+  const audio = new Audio(ttsUrl);
+  currentAudioPlayer = audio;
+  if (buttonEl) {
+    buttonEl.classList.add('tts-playing');
+    buttonEl._isPlaying = true;
+  }
+
+  audio.play().then(() => {
+    // Playing high-quality TTS audio stream
+  }).catch((err) => {
+    console.warn('Backend TTS audio stream failed, falling back to Web Speech API:', err.message);
+    currentAudioPlayer = null;
+    if (buttonEl) buttonEl._isPlaying = false;
+    fallbackBrowserSpeak(cleanText, buttonEl);
+  });
+
+  audio.onended = () => {
+    if (buttonEl) {
+      buttonEl.classList.remove('tts-playing');
+      buttonEl._isPlaying = false;
+    }
+    currentAudioPlayer = null;
+  };
+
+  audio.onerror = () => {
+    if (buttonEl) {
+      buttonEl.classList.remove('tts-playing');
+      buttonEl._isPlaying = false;
+    }
+    currentAudioPlayer = null;
+    fallbackBrowserSpeak(cleanText, buttonEl);
+  };
+}
+
+function fallbackBrowserSpeak(cleanText, buttonEl) {
   if (!('speechSynthesis' in window)) {
     showToast('Text-to-speech not supported.');
     return;
   }
 
-  if (window.speechSynthesis.speaking) {
-    window.speechSynthesis.cancel();
-    if (buttonEl) buttonEl.classList.remove('tts-playing');
-    return;
-  }
-
-  const cleanText = text.replace(/<[^>]*>/g, '').replace(/\*/g, '');
   currentSpeechUtterance = new SpeechSynthesisUtterance(cleanText);
 
   const langLocales = {
     en: 'en-US', hi: 'hi-IN', bn: 'bn-IN', ta: 'ta-IN', te: 'te-IN',
     mr: 'mr-IN', gu: 'gu-IN', kn: 'kn-IN', pa: 'pa-IN'
   };
-  currentSpeechUtterance.lang = langLocales[state.language] || 'en-US';
+  const targetLang = langLocales[state.language] || 'en-US';
+  currentSpeechUtterance.lang = targetLang;
+
+  const voices = window.speechSynthesis.getVoices();
+  if (voices && voices.length > 0) {
+    const langPrefix = state.language === 'bn' ? 'bn' : targetLang.slice(0, 2);
+    const matchedVoice = voices.find(v => v.lang && (v.lang === targetLang || v.lang.startsWith(langPrefix)));
+    if (matchedVoice) {
+      currentSpeechUtterance.voice = matchedVoice;
+    }
+  }
 
   if (buttonEl) buttonEl.classList.add('tts-playing');
 
@@ -2425,7 +2496,7 @@ function renderMultiModelSection(multimodel) {
           <span class="model-name">${m.name}</span>
           <span class="model-temp">${m.tempMax != null ? `${Math.round(m.tempMax)}°C` : '--'}</span>
         </div>
-        <div class="model-row"><span class="model-row-label">${dict.modelCondition || 'Condition'}</span><span class="model-row-val">${m.description}</span></div>
+        <div class="model-row"><span class="model-row-label">${dict.modelCondition || 'Condition'}</span><span class="model-row-val">${getLocalizedWeatherCondition(m.weatherCode, m.description, state.language)}</span></div>
         <div class="model-row"><span class="model-row-label">${dict.modelRain || 'Rain Sum'}</span><span class="model-row-val">${m.precip != null ? `${m.precip} mm` : '0 mm'}</span></div>
         <div class="model-row"><span class="model-row-label">${dict.modelWind || 'Max Wind'}</span><span class="model-row-val">${m.windSpeed != null ? `${Math.round(m.windSpeed)} km/h` : '--'}</span></div>
       `;

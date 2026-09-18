@@ -39,7 +39,8 @@ function getApiHandler(pathname) {
     '/api/geocode': './api/geocode',
     '/api/chat': './api/chat',
     '/api/aqi': './api/aqi',
-    '/api/multimodel': './api/multimodel'
+    '/api/multimodel': './api/multimodel',
+    '/api/tts': './api/tts'
   };
 
   const target = routeMap[pathname];
