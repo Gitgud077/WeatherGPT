@@ -184,17 +184,25 @@ async function streamGemini(apiKey, userMessage, conversation, weatherContext, l
   const fallbackModels = [
     primaryModel,
     'gemini-3.6-flash',
-    'gemini-3.7-flash',
-    'gemini-2.5-flash',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash'
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite',
+    'gemini-3.8-flash',
+    'gemini-3.7-flash'
   ].filter((m, idx, arr) => arr.indexOf(m) === idx);
 
   let lastError = null;
   const systemInstructionText = `${getSystemPrompt(language)}\n\nWeather data (source of truth):\n${JSON.stringify(weatherContext, null, 2)}`;
 
   for (const model of fallbackModels) {
+    if (res.headersSent) {
+      break;
+    }
+
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`,
         {
@@ -211,9 +219,12 @@ async function streamGemini(apiKey, userMessage, conversation, weatherContext, l
             },
             contents,
             generationConfig: { temperature: 0.4 }
-          })
+          }),
+          signal: controller.signal
         }
       );
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -234,6 +245,7 @@ async function streamGemini(apiKey, userMessage, conversation, weatherContext, l
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let buffer = '';
+      let hasWrittenHeaders = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -254,6 +266,16 @@ async function streamGemini(apiKey, userMessage, conversation, weatherContext, l
             const parts = parsed.candidates?.[0]?.content?.parts || [];
             for (const part of parts) {
               if (!part.thought && part.text) {
+                if (!hasWrittenHeaders && !res.headersSent) {
+                  res.writeHead(200, {
+                    'Content-Type': 'text/event-stream; charset=utf-8',
+                    'Cache-Control': 'no-cache, no-transform',
+                    'Connection': 'keep-alive',
+                    'X-Accel-Buffering': 'no',
+                    'Access-Control-Allow-Origin': '*'
+                  });
+                  hasWrittenHeaders = true;
+                }
                 res.write(`data: ${JSON.stringify({ text: part.text })}\n\n`);
               }
             }
@@ -263,20 +285,28 @@ async function streamGemini(apiKey, userMessage, conversation, weatherContext, l
         }
       }
 
-      res.write(`data: [DONE]\n\n`);
-      res.end();
-      return;
+      if (hasWrittenHeaders || res.headersSent) {
+        res.write(`data: [DONE]\n\n`);
+        res.end();
+        return;
+      } else {
+        console.warn(`Model ${model} returned empty response body, trying next model...`);
+        lastError = new Error(`Model ${model} returned empty response.`);
+        continue;
+      }
     } catch (err) {
       console.warn(`Gemini streaming error on model ${model}:`, err.message);
       lastError = err;
+      if (res.headersSent) {
+        res.write(`data: [DONE]\n\n`);
+        res.end();
+        return;
+      }
     }
   }
 
   if (!res.headersSent) {
     throw lastError || new Error('All Gemini models failed to respond.');
-  } else {
-    res.write(`data: ${JSON.stringify({ error: lastError?.message || 'Streaming interrupted' })}\n\n`);
-    res.end();
   }
 }
 
