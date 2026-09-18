@@ -1546,7 +1546,7 @@ body.has-severe-alert .app {
    Air Quality Index (AQI) Intelligence Module
    ========================================= */
 .aqi-card {
-  margin-top: 24px;
+  /* Spacing uniformly governed by .secondary-card */
 }
 
 .aqi-badge {
