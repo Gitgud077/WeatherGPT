@@ -10,7 +10,7 @@ module.exports = async function handler(req, res) {
   }
 
   const url = new URL(req.url, 'http://localhost');
-  const city = (req.query && req.query.city) || url.searchParams.get('city');
+  const city = (req.query && (req.query.city || req.query.q)) || url.searchParams.get('city') || url.searchParams.get('q');
   const count = (req.query && req.query.count) || url.searchParams.get('count') || 1;
 
   if (!city || city.trim().length < 2) {

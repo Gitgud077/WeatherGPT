@@ -1,5 +1,5 @@
 /* =========================================
-   WeatherGPT — Production Frontend Script
+   RituGPT — Production Frontend Script
    ========================================= */
 
 const state = {
@@ -10,7 +10,7 @@ const state = {
   multimodel: null,
   chatHistory: [],
   language: 'en',
-  bookmarks: JSON.parse(localStorage.getItem('weathergpt_bookmarks') || '[]'),
+  bookmarks: JSON.parse(localStorage.getItem('ritugpt_bookmarks') || localStorage.getItem('weathergpt_bookmarks') || '[]'),
   comparisonLocation: null,
   comparisonCurrent: null,
   comparisonForecast: null
@@ -56,7 +56,10 @@ const TRANSLATIONS = {
     tagline: 'Ask the weather anything.',
     searchBtn: 'Search',
     compareBtn: 'Compare',
-    askGptBtn: 'Ask WeatherGPT',
+    askGptBtn: 'Ask RituGPT',
+    navAiBtn: 'AI Analysis',
+    navAqiBtn: 'Air Quality',
+    navTrendsBtn: 'Weather Trends',
     compareTitle: 'Multi-Location Side-by-Side Comparison',
     feelsLike: 'Feels like',
     humidity: 'Humidity',
@@ -73,13 +76,53 @@ const TRANSLATIONS = {
     dailyTitle: '7-Day Forecast',
     dailyHint: 'Weekly outlook',
     trendsTitle: 'Weather Trends & Analytics',
-    footer: 'Weather data by Open-Meteo. Grounded AI by Google Gemini.'
+    footer: 'Weather data by Open-Meteo. Grounded AI by Google Gemini.',
+    multimodelTitle: 'Multi-Model Ensemble & Decision Engine',
+    modelBreakdownBtn: 'Model-Wise Breakdown',
+    evaluatingConsensus: 'Evaluating Consensus...',
+    consensusAgreement: 'Model Consensus Agreement',
+    decisionsTitle: 'Probable AI Recommendations (Multi-Model Grounded)',
+    evaluating: 'Evaluating...',
+    decFitnessLabel: 'Outdoor Fitness & Sports',
+    decRainLabel: 'Rain Risk / Outdoor Event',
+    decLaundryLabel: 'Laundry & Sun Drying',
+    decMaskLabel: 'Health & Pollution Action',
+    probableTempLabel: 'Probable Max Temp',
+    probableSpreadLabel: 'Model Variance / Spread',
+    probablePrecipLabel: 'Probable Rain Sum',
+    probableAgreementLabel: 'Rain Model Consensus',
+    breakdownTitle: 'Live Individual Meteorological Model Breakdown (IMD, NOAA GFS, ECMWF, ICON, GEM, ARPEGE)',
+    modelCondition: 'Condition',
+    modelRain: 'Rain Sum',
+    modelWind: 'Max Wind',
+    fitness_favorable: 'Highly Favorable — Great conditions for outdoor running & sports.',
+    fitness_caution: 'Exercise Caution — High thermal stress. Hydrate & avoid peak afternoon sun.',
+    fitness_indoor: 'Indoor Workout Suggested — Rain showers active outdoors.',
+    fitness_pollution: 'Reduce Outdoor Exertion — Air quality is degraded for cardio workouts.',
+    rain_low: 'Low Risk — Dry conditions predicted across ensemble models.',
+    rain_high: 'High Rain Risk — Multiple models confirm precipitation. Carry umbrella!',
+    rain_moderate: 'Moderate Rain Risk — Scattered light showers possible. Have a backup plan.',
+    laundry_optimal: 'Optimal Drying — Warm temperatures & fair breezes.',
+    laundry_indoor: 'Indoor Drying Advised — High likelihood of wet clothes outdoors.',
+    laundry_slow: 'Slow Drying Speed — High relative humidity in ambient air.',
+    mask_clear: 'Clear Air — No protective mask required for general public.',
+    mask_mandatory: 'N95 Mask Mandatory — Severe pollution alert. Keep windows closed.',
+    mask_recommended: 'N95 Mask Recommended — Sensitive groups & asthmatics take precaution.',
+    condition: "Condition",
+    searchPlaceholder: "Search any city or coordinates...",
+    comparePlaceholder: "Compare another city...",
+    chatPlaceholder: "Ask anything about the weather...",
+    today: "Today",
+    tomorrow: "Tomorrow",
   },
   hi: {
     tagline: 'मौसम से जुड़ा कुछ भी पूछें।',
     searchBtn: 'खोजें',
     compareBtn: 'तुलना करें',
-    askGptBtn: 'WeatherGPT से पूछें',
+    askGptBtn: 'RituGPT से पूछें',
+    navAiBtn: 'एआई विश्लेषण',
+    navAqiBtn: 'वायु गुणवत्ता',
+    navTrendsBtn: 'मौसम रुझान',
     compareTitle: 'दो शहरों के मौसम की तुलना',
     feelsLike: 'महसूस होता है',
     humidity: 'आर्द्रता',
@@ -96,13 +139,53 @@ const TRANSLATIONS = {
     dailyTitle: '7 दिनों का पूर्वानुमान',
     dailyHint: 'साप्ताहिक दृष्टिकोण',
     trendsTitle: 'मौसम रुझान और विश्लेषण',
-    footer: 'ओपन-मेटियो द्वारा मौसम डेटा। गूगल जेमिनी द्वारा ग्राउंडेड एआई।'
+    footer: 'ओपन-मेटियो द्वारा मौसम डेटा। गूगल जेमिनी द्वारा ग्राउंडेड एआई।',
+    multimodelTitle: 'मल्टी-मॉडल पहनावा और निर्णय इंजन',
+    modelBreakdownBtn: 'मॉडल-वार विवरण',
+    evaluatingConsensus: 'सहमति का मूल्यांकन जारी...',
+    consensusAgreement: 'मॉडल सहमति समझौता',
+    decisionsTitle: 'अनुमानित एआई सिफारिशें (मल्टी-मॉडल आधारित)',
+    evaluating: 'मूल्यांकन जारी...',
+    decFitnessLabel: 'आउटडोर फिटनेस और खेल',
+    decRainLabel: 'बारिश का जोखिम / बाहरी कार्यक्रम',
+    decLaundryLabel: 'कपड़े धोना और धूप में सुखाना',
+    decMaskLabel: 'स्वास्थ्य और प्रदूषण सुरक्षा',
+    probableTempLabel: 'अनुमानित अधिकतम तापमान',
+    probableSpreadLabel: 'मॉडल अंतर / प्रसार',
+    probablePrecipLabel: 'अनुमानित कुल बारिश',
+    probableAgreementLabel: 'बारिश मॉडल सहमति',
+    breakdownTitle: 'लाइव व्यक्तिगत मौसम मॉडल विवरण (IMD, NOAA GFS, ECMWF, ICON, GEM, ARPEGE)',
+    modelCondition: 'स्थिति',
+    modelRain: 'कुल बारिश',
+    modelWind: 'अधिकतम हवा',
+    fitness_favorable: 'अत्यधिक अनुकूल — दौड़ने और आउटडोर खेलों के लिए बेहतरीन मौसम।',
+    fitness_caution: 'सावधानी बरतें — अत्यधिक गर्मी और धूप। पानी पिएं और दोपहर में बाहर जाने से बचें।',
+    fitness_indoor: 'घर के अंदर कसरत की सलाह — बाहर बारिश हो रही है।',
+    fitness_pollution: 'बाहरी मेहनत कम करें — कार्डियो कसरत के लिए हवा की गुणवत्ता खराब है।',
+    rain_low: 'कम जोखिम — सभी मॉडलों में शुष्क मौसम का अनुमान है।',
+    rain_high: 'बारिश का भारी जोखिम — कई मॉडलों ने बारिश की पुष्टि की। छाता अवश्य रखें!',
+    rain_moderate: 'मध्यम बारिश का जोखिम — हल्की फुहारें संभव हैं। वैकल्पिक योजना रखें।',
+    laundry_optimal: 'सुखाने के लिए उत्तम — गर्म तापमान और हल्की हवा अनुकूल है।',
+    laundry_indoor: 'घर के अंदर सुखाने की सलाह — बाहर कपड़े भीगने की पूरी संभावना है।',
+    laundry_slow: 'धीमी गति से सूखेंगे — हवा में अत्यधिक नमी (आर्द्रता) है।',
+    mask_clear: 'स्वच्छ हवा — आम जनता के लिए मास्क की आवश्यकता नहीं है।',
+    mask_mandatory: 'N95 मास्क अनिवार्य — गंभीर प्रदूषण चेतावनी। खिड़कियां बंद रखें।',
+    mask_recommended: 'N95 मास्क की सलाह — संवेदनशील लोग और अस्थमा के मरीज सावधानी बरतें।',
+    condition: "मौसम स्थिति",
+    searchPlaceholder: "शहर या निर्देशांक खोजें...",
+    comparePlaceholder: "दूसरे शहर से तुलना करें...",
+    chatPlaceholder: "मौसम के बारे में कुछ भी पूछें...",
+    today: "आज",
+    tomorrow: "कल",
   },
   bn: {
     tagline: 'আবহাওয়া সম্পর্কিত যে কোনও প্রশ্ন করুন।',
     searchBtn: 'অনুসন্ধান',
     compareBtn: 'তুলনা করুন',
-    askGptBtn: 'WeatherGPT কে জিজ্ঞাসা করুন',
+    askGptBtn: 'RituGPT কে জিজ্ঞাসা করুন',
+    navAiBtn: 'এআই বিশ্লেষণ',
+    navAqiBtn: 'বায়ুর মান',
+    navTrendsBtn: 'আবহাওয়ার প্রবণতা',
     compareTitle: 'একাধিক শহরের আবহাওয়ার তুলনা',
     feelsLike: 'অনূভূত তাপমাত্রা',
     humidity: 'আর্দ্রতা',
@@ -119,13 +202,53 @@ const TRANSLATIONS = {
     dailyTitle: '৭ দিনের পূর্বাভাস',
     dailyHint: 'সাপ্তাহিক দৃষ্টিভঙ্গি',
     trendsTitle: 'আবহাওয়ার প্রবণতা ও বিশ্লেষণ',
-    footer: 'ওপেন-মেটিও দ্বারা আবহাওয়ার তথ্য। গুগল জেমিনি দ্বারা চালিত এআই।'
+    footer: 'ওপেন-মেটিও দ্বারা আবহাওয়ার তথ্য। গুগল জেমিনি দ্বারা চালিত এআই।',
+    multimodelTitle: 'মাল্টি-মডেল সমাহার ও সিদ্ধান্ত ইঞ্জিন',
+    modelBreakdownBtn: 'মডেলভিত্তিক বিবরণ',
+    evaluatingConsensus: 'ঐক্যমত্য মূল্যায়ন হচ্ছে...',
+    consensusAgreement: 'মডেলের ঐক্যমত্য',
+    decisionsTitle: 'সম্ভাব্য এআই সুপারিশ (মাল্টি-মডেল ভিত্তিক)',
+    evaluating: 'মূল্যায়ন করা হচ্ছে...',
+    decFitnessLabel: 'আউটডোর ফিটনেস ও খেলাধুলা',
+    decRainLabel: 'বৃষ্টির ঝুঁকি / বাইরের অনুষ্ঠান',
+    decLaundryLabel: 'কাপড় ধোয়া ও রোদে শুকানো',
+    decMaskLabel: 'স্বাস্থ্য ও দূষণ সতর্কতা',
+    probableTempLabel: 'সম্ভাব্য সর্বোচ্চ তাপমাত্রা',
+    probableSpreadLabel: 'মডেল ব্যবধান / বিস্তার',
+    probablePrecipLabel: 'সম্ভাব্য মোট বৃষ্টিপাত',
+    probableAgreementLabel: 'বৃষ্টির মডেল ঐক্যমত্য',
+    breakdownTitle: 'লাইভ একক আবহাওয়া মডেল বিশদ (IMD, NOAA GFS, ECMWF, ICON, GEM, ARPEGE)',
+    modelCondition: 'পরিস্থিতি',
+    modelRain: 'বৃষ্টির পরিমাণ',
+    modelWind: 'সর্বোচ্চ বাতাস',
+    fitness_favorable: 'অত্যন্ত অনুকূল — বাইরে দৌড়াদৌড়ি এবং খেলাধুলার জন্য চমৎকার আবহাওয়া।',
+    fitness_caution: 'সতর্ক থাকুন — অতিরিক্ত গরম ও তাপ। প্রচুর জল পান করুন ও দুপুরের রোদ এড়িয়ে চলুন।',
+    fitness_indoor: 'ঘরের ভেতরে ব্যায়ামের পরামর্শ — বাইরে বৃষ্টি হচ্ছে।',
+    fitness_pollution: 'বাইরে অতিরিক্ত পরিশ্রম কমিয়ে দিন — কার্ডিও ব্যায়ামের জন্য বায়ুর মান খারাপ।',
+    rain_low: 'কম ঝুঁকি — সমস্ত মডেল শুষ্ক আবহাওয়ার পূর্বাভাস দিচ্ছে।',
+    rain_high: 'ভারী বৃষ্টির ঝুঁকি — একাধিক মডেল বৃষ্টির নিশ্চিত করেছে। ছাতা সাথে রাখুন!',
+    rain_moderate: 'মাঝারি বৃষ্টির ঝুঁকি — হালকা বৃষ্টি হতে পারে। বিকল্প ব্যবস্থা রাখুন।',
+    laundry_optimal: 'শুকানোর উপযুক্ত সময় — উষ্ণ তাপমাত্রা এবং মনোরম বাতাস।',
+    laundry_indoor: 'ঘরের ভেতরে শুকানোর পরামর্শ — বাইরে কাপড় ভিজে যাওয়ার প্রবল আশঙ্কা।',
+    laundry_slow: 'ধীর গতিতে শুকাবে — বাতাসে আপেক্ষিক আর্দ্রতা অত্যন্ত বেশি।',
+    mask_clear: 'পরিষ্কার বাতাস — সাধারণ মানুষের মাস্ক পরার প্রয়োজন নেই।',
+    mask_mandatory: 'N95 মাস্ক বাধ্যতামূলক — মারাত্মক দূষণ সতর্কতা। ঘরের জানালা বন্ধ রাখুন।',
+    mask_recommended: 'N95 মাস্ক ব্যবহারের পরামর্শ — সংবেদনশীল মানুষ ও হাঁপানি রোগীরা সতর্কতা অবলম্বন করুন।',
+    condition: "আবহাওয়ার অবস্থা",
+    searchPlaceholder: "শহর বা স্থানাঙ্ক অনুসন্ধান করুন...",
+    comparePlaceholder: "অন্য শহরের সাথে তুলনা করুন...",
+    chatPlaceholder: "আবহাওয়া সম্পর্কে যা কিছু জিজ্ঞাসা করুন...",
+    today: "আজ",
+    tomorrow: "আগামীকাল",
   },
   ta: {
     tagline: 'வானிலை பற்றி எதுவும் கேட்கலாம்.',
     searchBtn: 'தேடு',
     compareBtn: 'ஒப்பிடு',
-    askGptBtn: 'WeatherGPT-யிடம் கேள்',
+    askGptBtn: 'RituGPT-யிடம் கேள்',
+    navAiBtn: 'AI பகுப்பாய்வு',
+    navAqiBtn: 'காற்றுத் தரம்',
+    navTrendsBtn: 'வானிலை போக்குகள்',
     compareTitle: 'நகரங்களின் வானிலை ஒப்பீடு',
     feelsLike: 'உணரப்படும் வெப்பநிலை',
     humidity: 'ஈரப்பதம்',
@@ -142,13 +265,53 @@ const TRANSLATIONS = {
     dailyTitle: '7 நாள் முன்னறிவிப்பு',
     dailyHint: 'வாராந்திர கண்ணோட்டம்',
     trendsTitle: 'வானிலை போக்குகள்',
-    footer: 'Open-Meteo வானிலை தரவு. Google Gemini AI.'
+    footer: 'Open-Meteo வானிலை தரவு. Google Gemini AI.',
+    multimodelTitle: 'மல்டி-மாடல் முன்னறிவிப்பு மற்றும் முடிவு இயந்திரம்',
+    modelBreakdownBtn: 'மாதிரி வாரியான விவரம்',
+    evaluatingConsensus: 'கருத்தொற்றுமை மதிப்பீடு செய்யப்படுகிறது...',
+    consensusAgreement: 'மாடல் ஒருமித்த ஒப்பந்தம்',
+    decisionsTitle: 'சாத்தியமான AI பரிந்துரைகள் (மல்டி-மாடல் அடிப்படை)',
+    evaluating: 'மதிப்பீடு செய்யப்படுகிறது...',
+    decFitnessLabel: 'வெளிப்புற உடற்பயிற்சி & விளையாட்டு',
+    decRainLabel: 'மழை ஆபத்து / வெளிப்புற நிகழ்வு',
+    decLaundryLabel: 'துணி துவைத்தல் & வெயிலில் உலர்த்துதல்',
+    decMaskLabel: 'சுகாதாரம் & மாசு பாதுகாப்பு நடவடிக்கை',
+    probableTempLabel: 'சாத்தியமான அதிகபட்ச வெப்பநிலை',
+    probableSpreadLabel: 'மாடல் மாறுபாடு / பரவல்',
+    probablePrecipLabel: 'சாத்தியமான மொத்த மழை',
+    probableAgreementLabel: 'மழை மாடல் ஒருமித்த கருத்து',
+    breakdownTitle: 'நேரலை தனிநபர் வானிலை மாடல் விவரங்கள் (IMD, NOAA GFS, ECMWF, ICON, GEM, ARPEGE)',
+    modelCondition: 'நிலை',
+    modelRain: 'மழை அளவு',
+    modelWind: 'அதிகபட்ச காற்று',
+    fitness_favorable: 'மிகவும் சாதகமானது — வெளிப்புற ஓட்டம் மற்றும் விளையாட்டுகளுக்கு சிறந்த சூழல்.',
+    fitness_caution: 'எச்சரிக்கையுடன் இருங்கள் — அதிக வெப்ப அழுத்தம். நீர் அருந்துங்கள், மதிய வெயிலைத் தவிர்க்கவும்.',
+    fitness_indoor: 'உட்புற உடற்பயிற்சி பரிந்துரைக்கப்படுகிறது — வெளியே மழை பெய்கிறது.',
+    fitness_pollution: 'வெளிப்புற கடின உழைப்பைக் குறைக்கவும் — உடற்பயிற்சிக்கு காற்றின் தரம் குறைவாக உள்ளது.',
+    rain_low: 'குறைந்த ஆபத்து — அனைத்து மாடல்களும் வறண்ட வானிலையைக் கணிக்கின்றன.',
+    rain_high: 'அதிக மழை ஆபத்து — பல மாதிரிகள் மழையை உறுதி செய்கின்றன. குடை எடுத்துச் செல்லுங்கள்!',
+    rain_moderate: 'மிதமான மழை ஆபத்து — லேசான தூறல் சாத்தியம். மாற்றுத் திட்டம் வைத்துக் கொள்ளுங்கள்.',
+    laundry_optimal: 'சிறந்த உலர்த்தும் சூழல் — வெப்பமான காலநிலை மற்றும் மெல்லிய காற்று.',
+    laundry_indoor: 'வீட்டிற்குள் உலர்த்த பரிந்துரைக்கப்படுகிறது — வெளியில் துணிகள் நனைய வாய்ப்புள்ளது.',
+    laundry_slow: 'மெதுவாகவே உலரும் — காற்றில் அதிக ஈரப்பதம் உள்ளது.',
+    mask_clear: 'சுத்தமான காற்று — பொதுமக்களுக்கு முகக்கவசம் தேவையில்லை.',
+    mask_mandatory: 'N95 முகக்கவசம் கட்டாயம் — கடுமையான காற்று மாசுபாடு எச்சரிக்கை. ஜன்னல்களை மூடி வைக்கவும்.',
+    mask_recommended: 'N95 முகக்கவசம் பரிந்துரைக்கப்படுகிறது — ஆஸ்துமா மற்றும் உணர்திறன் உள்ளவர்கள் முன்னெச்சரிக்கை எடுக்கவும்.',
+    condition: "வானிலை நிலை",
+    searchPlaceholder: "நகரம் அல்லது ஆயங்களை தேடுங்கள்...",
+    comparePlaceholder: "மற்றொரு நகரத்துடன் ஒப்பிடுங்கள்...",
+    chatPlaceholder: "வானிலை பற்றி எதையும் கேளுங்கள்...",
+    today: "இன்று",
+    tomorrow: "நாளை",
   },
   te: {
     tagline: 'వాతావరణం గురించి ఏమైనా అడగండి.',
     searchBtn: 'వెతకండి',
     compareBtn: 'పోల్చండి',
-    askGptBtn: 'WeatherGPT ని అడగండి',
+    askGptBtn: 'RituGPT ని అడగండి',
+    navAiBtn: 'AI విశ్లేషణ',
+    navAqiBtn: 'గాలి నాణ్యత',
+    navTrendsBtn: 'వాతావరణ పోకడలు',
     compareTitle: 'రెండు నగరాల వాతావరణ పోలిక',
     feelsLike: 'అనిపించే ఉష్ణోగ్రత',
     humidity: 'తేమ',
@@ -165,13 +328,53 @@ const TRANSLATIONS = {
     dailyTitle: '7 రోజుల అంచనా',
     dailyHint: 'వారపు అంచనా',
     trendsTitle: 'వాతావరణ విశ్లేషణ',
-    footer: 'Open-Meteo వాతావరణ డేటా. Google Gemini AI.'
+    footer: 'Open-Meteo వాతావరణ డేటా. Google Gemini AI.',
+    multimodelTitle: 'మల్టీ-మోడల్ సమిష్టి & నిర్ణయ ఇంజిన్',
+    modelBreakdownBtn: 'మోడల్ వారీ వివరణ',
+    evaluatingConsensus: 'ఏకాభిప్రాయం అంచనా వేయబడుతోంది...',
+    consensusAgreement: 'మోడల్ ఏకాభిప్రాయం',
+    decisionsTitle: 'సంభావ్య AI సిఫార్సులు (మల్టీ-మోడల్ ఆధారితం)',
+    evaluating: 'అంచనా వేయబడుతోంది...',
+    decFitnessLabel: 'అవుట్‌డోర్ ఫిట్‌నెస్ & క్రీడలు',
+    decRainLabel: 'వర్షపు ప్రమాదం / బాహ్య కార్యక్రమాలు',
+    decLaundryLabel: 'లాండ్రీ & ఎండలో ఆరబెట్టడం',
+    decMaskLabel: 'ఆరోగ్యం & కాలుష్య నివారణ చర్యలు',
+    probableTempLabel: 'సంభావ్య గరిష్ట ఉష్ణోగ్రత',
+    probableSpreadLabel: 'మోడల్ వ్యత్యాసం / వ్యాప్తి',
+    probablePrecipLabel: 'సంభావ్య మొత్తం వర్షం',
+    probableAgreementLabel: 'వర్షపు మోడల్ ఏకాభిప్రాయం',
+    breakdownTitle: 'ప్రత్యక్ష వ్యక్తిగత వాతావరణ నమూనాల విభజన (IMD, NOAA GFS, ECMWF, ICON, GEM, ARPEGE)',
+    modelCondition: 'పరిస్థితి',
+    modelRain: 'మొత్తం వర్షం',
+    modelWind: 'గరిష్ట గాలి',
+    fitness_favorable: 'అత్యంత అనుకూలం — రన్నింగ్ మరియు అవుట్‌డోర్ క్రీడలకు అద్భుతమైన వాతావరణం.',
+    fitness_caution: 'జాగ్రత్త వహించండి — తీవ్రమైన వేడి. నీరు ఎక్కువగా త్రాగండి, మధ్యాహ్న ఎండను నివారించండి.',
+    fitness_indoor: 'ఇండోర్ వ్యాయామం సూచించబడింది — బయట వర్షం కురుస్తోంది.',
+    fitness_pollution: 'బయట శ్రమను తగ్గించండి — కార్డియో వ్యాయామానికి గాలి నాణ్యత సరిగా లేదు.',
+    rain_low: 'తక్కువ ప్రమాదం — అన్ని మోడల్స్ పొడి వాతావరణాన్ని అంచనా వేస్తున్నాయి.',
+    rain_high: 'అధిక వర్షపు ముప్పు — బహుళ నమూనాలు వర్షాన్ని ధృవీకరించాయి. గొడుగు తీసుకెళ్లండి!',
+    rain_moderate: 'మోస్తరు వర్షపు ముప్పు — తేలికపాటి జల్లులు కురిసే అవకాశం ఉంది. ప్రత్యామ్నాయ ప్రణాళిక ఉంచుకోండి.',
+    laundry_optimal: 'బట్టలు ఆరడానికి అనుకూలం — వెచ్చని ఉష్ణోగ్రత మరియు అనుకూలమైన గాలి.',
+    laundry_indoor: 'ఇంటి లోపల ఆరబెట్టడం మంచిది — బయట బట్టలు తడిసిపోయే అవకాశం ఎక్కువ.',
+    laundry_slow: 'నెమ్మదిగా ఆరుతాయి — గాలిలో తేమ శాతం చాలా ఎక్కువగా ఉంది.',
+    mask_clear: 'స్వచ్ఛమైన గాలి — సాధారణ ప్రజలకు మాస్క్ అవసరం లేదు.',
+    mask_mandatory: 'N95 మాస్క్ తప్పనిసరి — తీవ్రమైన కాలుష్య హెచ్చరిక. కిటికీలు మూసి ఉంచండి.',
+    mask_recommended: 'N95 మాస్క్ సిఫార్సు చేయబడింది — ఆస్తమా బాధితులు మరియు సున్నిత వ్యక్తులు జాగ్రత్త వహించండి.',
+    condition: "వాతావరణ స్థితి",
+    searchPlaceholder: "నగరం లేదా కోఆర్డినేట్లను శోధించండి...",
+    comparePlaceholder: "మరొక నగరాన్ని సరిపోల్చండి...",
+    chatPlaceholder: "వాతావరణం గురించి ఏదైనా అడగండి...",
+    today: "ఈరోజు",
+    tomorrow: "రేపు",
   },
   mr: {
     tagline: 'हवामानाबद्दल काहीही विचारा.',
     searchBtn: 'शोधा',
     compareBtn: 'तुलना करा',
-    askGptBtn: 'WeatherGPT ला विचारा',
+    askGptBtn: 'RituGPT ला विचारा',
+    navAiBtn: 'एआय विश्लेषण',
+    navAqiBtn: 'हवेची गुणवत्ता',
+    navTrendsBtn: 'हवामान ट्रेंड्स',
     compareTitle: 'दोन शहरांच्या हवामानाची तुलना',
     feelsLike: 'जाणवणारे तापमान',
     humidity: 'आर्द्रता',
@@ -188,13 +391,53 @@ const TRANSLATIONS = {
     dailyTitle: '७ दिवसांचा अंदाज',
     dailyHint: 'साप्ताहिक अंदाज',
     trendsTitle: 'हवामान ट्रेंड्स व विश्लेषण',
-    footer: 'Open-Meteo हवामान डेटा. Google Gemini AI.'
+    footer: 'Open-Meteo हवामान डेटा. Google Gemini AI.',
+    multimodelTitle: 'मल्टी-मॉडेल एकत्रित अंदाज आणि निर्णय प्रणाली',
+    modelBreakdownBtn: 'मॉडेलनुसार तपशील',
+    evaluatingConsensus: 'सहमतीचे मूल्यांकन सुरू आहे...',
+    consensusAgreement: 'मॉडेल सहमती करार',
+    decisionsTitle: 'अपेक्षित एआय शिफारसी (मल्टी-मॉडेल आधारित)',
+    evaluating: 'मूल्यांकन सुरू आहे...',
+    decFitnessLabel: 'मैदानी व्यायाम आणि खेळ',
+    decRainLabel: 'पावसाचा धोका / बाहेरील कार्यक्रम',
+    decLaundryLabel: 'कपडे धुणे आणि उन्हात वाळवणे',
+    decMaskLabel: 'आरोग्य आणि प्रदूषण सुरक्षा',
+    probableTempLabel: 'अपेक्षित कमाल तापमान',
+    probableSpreadLabel: 'मॉडेल तफावत / प्रसार',
+    probablePrecipLabel: 'अपेक्षित एकूण पाऊस',
+    probableAgreementLabel: 'पाऊस मॉडेल सहमती',
+    breakdownTitle: 'थेट वैयक्तिक हवामान मॉडेल तपशील (IMD, NOAA GFS, ECMWF, ICON, GEM, ARPEGE)',
+    modelCondition: 'स्थिती',
+    modelRain: 'एकूण पाऊस',
+    modelWind: 'कमाल वारा',
+    fitness_favorable: 'अत्यंत अनुकूल — मैदानी धावणे आणि खेळांसाठी उत्तम परिस्थिती.',
+    fitness_caution: 'काळजी घ्या — तीव्र उष्णता. पुरेसे पाणी प्या आणि दुपारचे कडक ऊन टाळा.',
+    fitness_indoor: 'घरामध्ये व्यायामाचा सल्ला — बाहेर पाऊस पडत आहे.',
+    fitness_pollution: 'बाहेर जास्त कष्ट टाळा — व्यायामासाठी हवेची गुणवत्ता खालावली आहे.',
+    rain_low: 'कमी धोका — सर्व मॉडेल्स कोरड्या हवामानाचा अंदाज वर्तवत आहेत.',
+    rain_high: 'पावसाचा मोठा धोका — अनेक मॉडेल्सनी पाऊस निश्चित केला आहे. छत्री सोबत ठेवा!',
+    rain_moderate: 'मध्यम पावसाचा धोका — हलक्या सरी कोसळण्याची शक्यता आहे. पर्यायी तयारी ठेवा.',
+    laundry_optimal: 'वाळवण्यासाठी उत्तम — उबदार तापमान आणि योग्य वारा अनुकूल आहे.',
+    laundry_indoor: 'घरात कपडे वाळवण्याचा सल्ला — बाहेर कपडे भिजण्याची दाट शक्यता आहे.',
+    laundry_slow: 'हळूहळू वाळतील — हवेमध्ये आर्द्रतेचे प्रमाण जास्त आहे.',
+    mask_clear: 'स्वच्छ हवा — सर्वसामान्यांना मास्क वापरण्याची गरज नाही.',
+    mask_mandatory: 'N95 मास्क अनिवार्य — गंभीर प्रदूषण इशारा. खिडक्या बंद ठेवा.',
+    mask_recommended: 'N95 मास्कचा सल्ला — संवेदनशील व्यक्ती आणि दम्याच्या रुग्णांनी खबरदारी घ्यावी.',
+    condition: "हवामान स्थिती",
+    searchPlaceholder: "कोणतेही शहर किंवा निर्देशांक शोधा...",
+    comparePlaceholder: "दुसऱ्या शहराशी तुलना करा...",
+    chatPlaceholder: "हवामानाबद्दल काहीही विचारा...",
+    today: "आज",
+    tomorrow: "उद्या",
   },
   gu: {
     tagline: 'હવામાન વિશે કંઈપણ પૂછો.',
     searchBtn: 'શોધો',
     compareBtn: 'સરખામણી કરો',
-    askGptBtn: 'WeatherGPT ને પૂછો',
+    askGptBtn: 'RituGPT ને પૂછો',
+    navAiBtn: 'AI વિશ્લેષણ',
+    navAqiBtn: 'હવાની ગુણવત્તા',
+    navTrendsBtn: 'હવામાન વલણ',
     compareTitle: 'બે શહેરોના હવામાનની સરખામણી',
     feelsLike: 'અનુભવાતું તાપમાન',
     humidity: 'ભેજ',
@@ -211,13 +454,53 @@ const TRANSLATIONS = {
     dailyTitle: '૭ દિવસની આગાહી',
     dailyHint: 'સાપ્તાહિક દ્રષ્ટિકોણ',
     trendsTitle: 'હવામાન વિશ્લેષણ',
-    footer: 'Open-Meteo ડેટા. Google Gemini AI.'
+    footer: 'Open-Meteo ડેટા. Google Gemini AI.',
+    multimodelTitle: 'મલ્ટી-મોડેલ અનુમાન અને નિર્ણય એન્જિન',
+    modelBreakdownBtn: 'મોડેલ મુજબની વિગતો',
+    evaluatingConsensus: 'સહમતિનું મૂલ્યાંકન ચાલુ છે...',
+    consensusAgreement: 'મોડેલ સહમતિ કરાર',
+    decisionsTitle: 'સંભવિત AI ભલામણો (મલ્ટી-મોડેલ આધારિત)',
+    evaluating: 'મૂલ્યાંકન ચાલુ છે...',
+    decFitnessLabel: 'આઉટડોર ફિટનેસ અને રમતગમત',
+    decRainLabel: 'વરસાદનું જોખમ / આઉટડોર ઇવેન્ટ',
+    decLaundryLabel: 'કપડાં ધોવા અને તડકામાં સૂકવવા',
+    decMaskLabel: 'આરોગ્ય અને પ્રદૂષણ સુરક્ષા',
+    probableTempLabel: 'સંભવિત મહત્તમ તાપમાન',
+    probableSpreadLabel: 'મોડેલ તફાવત / પ્રસાર',
+    probablePrecipLabel: 'સંભવિત કુલ વરસાદ',
+    probableAgreementLabel: 'વરસાદ મોડેલ સહમતિ',
+    breakdownTitle: 'લાઇવ વ્યક્તિગત હવામાન મોડેલ વિગત (IMD, NOAA GFS, ECMWF, ICON, GEM, ARPEGE)',
+    modelCondition: 'સ્થિતિ',
+    modelRain: 'કુલ વરસાદ',
+    modelWind: 'મહત્તમ પવન',
+    fitness_favorable: 'અત્યંત અનુકૂળ — આઉટડોર દોડ અને રમતગમત માટે ઉત્તમ હવામાન.',
+    fitness_caution: 'સાવચેતી રાખો — વધુ પડતી ગરમી. પાણી પીવો અને બપોરના તડકાથી બચો.',
+    fitness_indoor: 'ઇન્ડોર કસરત કરવાની સલાહ — બહાર વરસાદ પડી રહ્યો છે.',
+    fitness_pollution: 'બહાર વધુ શ્રમ ટાળો — કસરત માટે હવાની ગુણવત્તા ખરાબ છે.',
+    rain_low: 'ઓછું જોખમ — તમામ મોડેલો શુષ્ક હવામાનની આગાહી કરે છે.',
+    rain_high: 'વરસાદનું મોટું જોખમ — બહુવિધ મોડેલો વરસાદની પુષ્ટિ કરે છે. છત્રી સાથે રાખો!',
+    rain_moderate: 'મધ્યમ વરસાદનું જોખમ — હળવા ઝાપટાં શક્ય છે. વૈકલ્પિક આયોજન રાખો.',
+    laundry_optimal: 'સૂકવવા માટે શ્રેષ્ઠ — હુંફાળું તાપમાન અને અનુકૂળ પવન.',
+    laundry_indoor: 'ઘરમાં કપડાં સૂકવવાની સલાહ — બહાર કપડાં પલળી જવાની શક્યતા છે.',
+    laundry_slow: 'ધીમેથી સૂકાશે — હવામાં ભેજનું પ્રમાણ ઘણું વધારે છે.',
+    mask_clear: 'સ્વચ્છ હવા — સામાન્ય લોકો માટે માસ્ક જરૂરી નથી.',
+    mask_mandatory: 'N95 માસ્ક ફરજિયાત — ગંભીર પ્રદૂષણ ચેતવણી. બારીઓ બંધ રાખો.',
+    mask_recommended: 'N95 માસ્કની ભલામણ — અસ્થમા અને સંવેદનશીલ જૂથો સાવચેતી રાખે.',
+    condition: "હવામાન સ્થિતિ",
+    searchPlaceholder: "કોઈપણ શહેર અથવા કોઓર્ડિનેટ્સ શોધો...",
+    comparePlaceholder: "બીજા શહેર સાથે સરખામણી કરો...",
+    chatPlaceholder: "હવામાન વિશે કંઈપણ પૂછો...",
+    today: "આજે",
+    tomorrow: "આવતીકાલે",
   },
   kn: {
     tagline: 'ಹವಾಮಾನದ ಬಗ್ಗೆ ಏನನ್ನಾದರೂ ಕೇಳಿ.',
     searchBtn: 'ಹುಡುಕಿ',
     compareBtn: 'ಹೋಲಿಸಿ',
-    askGptBtn: 'WeatherGPT ಕೇಳಿ',
+    askGptBtn: 'RituGPT ಕೇಳಿ',
+    navAiBtn: 'AI ವಿಶ್ಲೇಷಣೆ',
+    navAqiBtn: 'ವಾಯು ಗುಣಮಟ್ಟ',
+    navTrendsBtn: 'ಹವಾಮಾನ ಪ್ರವೃತ್ತಿ',
     compareTitle: 'ಎರಡು ನಗರಗಳ ಹವಾಮಾನ ಹೋಲಿಕೆ',
     feelsLike: 'ಅನಿಸುವ ತಾಪಮಾನ',
     humidity: 'ತೇವಾಂಶ',
@@ -234,13 +517,53 @@ const TRANSLATIONS = {
     dailyTitle: '7 ದಿನಗಳ ಮುನ್ನೋಟ',
     dailyHint: 'ವಾರದ ಮುನ್ನೋಟ',
     trendsTitle: 'ಹವಾಮಾನ ವಿಶ್ಲೇಷಣೆ',
-    footer: 'Open-Meteo ಹವಾಮಾನ ಮಾಹಿತಿ. Google Gemini AI.'
+    footer: 'Open-Meteo ಹವಾಮಾನ ಮಾಹಿತಿ. Google Gemini AI.',
+    multimodelTitle: 'ಮಲ್ಟಿ-ಮಾದರಿ ಸಮಷ್ಟಿ ಮತ್ತು ನಿರ್ಧಾರ ಇಂಜಿನ್',
+    modelBreakdownBtn: 'ಮಾದರಿವಾರು ವಿವರ',
+    evaluatingConsensus: 'ಒಮ್ಮತದ ಮೌಲ್ಯಮಾಪನ ಮಾಡಲಾಗುತ್ತಿದೆ...',
+    consensusAgreement: 'ಮಾದರಿ ಒಮ್ಮತ ಒಪ್ಪಂದ',
+    decisionsTitle: 'ಸಂಭಾವ್ಯ AI ಶಿಫಾರಸುಗಳು (ಮಲ್ಟಿ-ಮಾದರಿ ಆಧಾರಿತ)',
+    evaluating: 'ಮೌಲ್ಯಮಾಪನ ಮಾಡಲಾಗುತ್ತಿದೆ...',
+    decFitnessLabel: 'ಹೊರಾಂಗಣ ಫಿಟ್‌ನೆಸ್ & ಕ್ರೀಡೆಗಳು',
+    decRainLabel: 'ಮಳೆಯ ಅಪಾಯ / ಹೊರಾಂಗಣ ಕಾರ್ಯಕ್ರಮ',
+    decLaundryLabel: 'ಬಟ್ಟೆ ಒಗೆಯುವುದು ಮತ್ತು ಬಿಸಿಲಿನಲ್ಲಿ ಒಣಗಿಸುವುದು',
+    decMaskLabel: 'ಆರೋಗ್ಯ ಮತ್ತು ಮಾಲಿನ್ಯ ರಕ್ಷಣೆ',
+    probableTempLabel: 'ಸಂಭಾವ್ಯ ಗರಿಷ್ಠ ತಾಪಮಾನ',
+    probableSpreadLabel: 'ಮಾದರಿ ವ್ಯತ್ಯಾಸ / ಹರಡುವಿಕೆ',
+    probablePrecipLabel: 'ಸಂಭಾವ್ಯ ಒಟ್ಟು ಮಳೆ',
+    probableAgreementLabel: 'ಮಳೆ ಮಾದರಿ ಒಮ್ಮತ',
+    breakdownTitle: 'ಲೈವ್ ಪ್ರತ್ಯೇಕ ಹವಾಮಾನ ಮಾದರಿ ವಿವರಣೆ (IMD, NOAA GFS, ECMWF, ICON, GEM, ARPEGE)',
+    modelCondition: 'ಸ್ಥಿತಿ',
+    modelRain: 'ಒಟ್ಟು ಮಳೆ',
+    modelWind: 'ಗರಿಷ್ಠ ಗಾಳಿ',
+    fitness_favorable: 'ಅತ್ಯಂತ ಅನುಕೂಲಕರ — ಹೊರಾಂಗಣ ಓಟ ಮತ್ತು ಕ್ರೀಡೆಗಳಿಗೆ ಉತ್ತಮ ವಾತಾವರಣ.',
+    fitness_caution: 'ಎಚ್ಚರಿಕೆ ವಹಿಸಿ — ಅತಿಯಾದ ಬಿಸಿಲು. ಹೆಚ್ಚು ನೀರು ಕುಡಿಯಿರಿ ಮತ್ತು ಮಧ್ಯಾಹ್ನದ ಬಿಸಿಲನ್ನು ತಪ್ಪಿಸಿ.',
+    fitness_indoor: 'ಒಳಾಂಗಣ ವ್ಯಾಯಾಮ ಸಲಹೆ — ಹೊರಗೆ ಮಳೆ ಬೀಳುತ್ತಿದೆ.',
+    fitness_pollution: 'ಹೊರಾಂಗಣ ಶ್ರಮವನ್ನು ಕಡಿಮೆ ಮಾಡಿ — ವ್ಯಾಯಾಮಕ್ಕೆ ಗಾಳಿಯ ಗುಣಮಟ್ಟ ಹದಗೆಟ್ಟಿದೆ.',
+    rain_low: 'ಕಡಿಮೆ ಅಪಾಯ — ಎಲ್ಲಾ ಮಾದರಿಗಳು ಒಣ ಹವಾಮಾನವನ್ನು ಊಹಿಸುತ್ತವೆ.',
+    rain_high: 'ಹೆಚ್ಚಿನ ಮಳೆಯ ಅಪಾಯ — ಹಲವು ಮಾದರಿಗಳು ಮಳೆಯನ್ನು ಖಚಿತಪಡಿಸಿವೆ. ಕೊಡೆ ಜೊತೆಗೆ ಇರಲಿ!',
+    rain_moderate: 'ಮಧ್ಯಮ ಮಳೆಯ ಅಪಾಯ — ಸಾಧಾರಣ ತುಂತುರು ಮಳೆ ಸಾಧ್ಯತೆ. ಪರ್ಯಾಯ ಯೋಜನೆ ಇರಲಿ.',
+    laundry_optimal: 'ಒಣಗಿಸಲು ಉತ್ತಮ — ಬೆಚ್ಚಗಿನ ತಾಪಮಾನ ಮತ್ತು ತಂಗಾಳಿ ಅನುಕೂಲಕರವಾಗಿದೆ.',
+    laundry_indoor: 'ಮನೆಯೊಳಗೆ ಒಣಗಿಸಲು ಸಲಹೆ — ಹೊರಗೆ ಬಟ್ಟೆಗಳು ಒದ್ದೆಯಾಗುವ ಸಂಭವವಿದೆ.',
+    laundry_slow: 'ನಿಧಾನವಾಗಿ ಒಣಗುತ್ತದೆ — ಗಾಳಿಯಲ್ಲಿ ತೇವಾಂಶ ಅಧಿಕವಾಗಿದೆ.',
+    mask_clear: 'ಸ್ವಚ್ಛ ಗಾಳಿ — ಸಾರ್ವಜನಿಕರಿಗೆ ಮಾಸ್ಕ್ ಅಗತ್ಯವಿಲ್ಲ.',
+    mask_mandatory: 'N95 ಮಾಸ್ಕ್ ಕಡ್ಡಾಯ — ತೀವ್ರ ಮಾಲಿನ್ಯ ಎಚ್ಚರಿಕೆ. ಕಿಟಕಿಗಳನ್ನು ಮುಚ್ಚಿಡಿ.',
+    mask_recommended: 'N95 ಮಾಸ್ಕ್ ಧರಿಸಲು ಸಲಹೆ — ಸೂಕ್ಷ್ಮ ಆರೋಗ್ಯದವರು ಮತ್ತು ಅಸ್ತಮಾ ರೋಗಿಗಳು ಮುನ್ನೆಚ್ಚರಿಕೆ ವಹಿಸಿ.',
+    condition: "ಹವಾಮಾನ ಸ್ಥಿತಿ",
+    searchPlaceholder: "ಯಾವುದೇ ನಗರ ಅಥವಾ ನಿರ್ದೇಶಾಂಕಗಳನ್ನು ಹುಡುಕಿ...",
+    comparePlaceholder: "ಮತ್ತೊಂದು ನಗರವನ್ನು ಹೋಲಿಕೆ ಮಾಡಿ...",
+    chatPlaceholder: "ಹವಾಮಾನದ ಬಗ್ಗೆ ಏನಾದರೂ ಕೇಳಿ...",
+    today: "ಇಂದು",
+    tomorrow: "ನಾಳೆ",
   },
   pa: {
     tagline: 'ਮੌਸਮ ਬਾਰੇ ਕੁਝ ਵੀ ਪੁੱਛੋ।',
     searchBtn: 'ਖੋਜੋ',
     compareBtn: 'ਤੁਲਨਾ ਕਰੋ',
-    askGptBtn: 'WeatherGPT ਨੂੰ ਪੁੱਛੋ',
+    askGptBtn: 'RituGPT ਨੂੰ ਪੁੱਛੋ',
+    navAiBtn: 'AI ਵਿਸ਼ਲੇਸ਼ਣ',
+    navAqiBtn: 'ਹਵਾ ਦੀ ਗੁਣਵੱਤਾ',
+    navTrendsBtn: 'ਮੌਸਮ ਦੇ ਰੁਝਾਨ',
     compareTitle: 'ਦੋ ਸ਼ਹਿਰਾਂ ਦੇ ਮੌਸਮ ਦੀ ਤੁਲਨਾ',
     feelsLike: 'ਮਹਿਸੂਸ ਹੁੰਦਾ ਹੈ',
     humidity: 'ਨਮੀ',
@@ -257,9 +580,402 @@ const TRANSLATIONS = {
     dailyTitle: '7 ਦਿਨਾਂ ਦਾ ਪੂਰਵ-ਅਨੁਮਾਨ',
     dailyHint: 'ਹਫ਼ਤਾਵਾਰੀ ਦ੍ਰਿਸ਼ਟੀਕੋਣ',
     trendsTitle: 'ਮੌਸਮ ਦੇ ਰੁਝਾਨ',
-    footer: 'Open-Meteo ਮੌਸਮ ਡੇਟਾ। Google Gemini AI.'
+    footer: 'Open-Meteo ਮੌਸਮ ਡੇਟਾ। Google Gemini AI.',
+    multimodelTitle: 'ਮਲਟੀ-ਮਾਡਲ ਸੰਗ੍ਰਹਿ ਅਤੇ ਫੈਸਲਾ ਇੰਜਣ',
+    modelBreakdownBtn: 'ਮਾਡਲ-ਵਾਰ ਵੇਰਵਾ',
+    evaluatingConsensus: 'ਸਹਿਮਤੀ ਦਾ ਮੁਲਾਂਕਣ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...',
+    consensusAgreement: 'ਮਾਡਲ ਸਹਿਮਤੀ ਸਮਝੌਤਾ',
+    decisionsTitle: 'ਸੰਭਾਵੀ ਏਆਈ ਸਿਫ਼ਾਰਸ਼ਾਂ (ਮਲਟੀ-ਮਾਡਲ ਅਧਾਰਿਤ)',
+    evaluating: 'ਮੁਲਾਂਕਣ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...',
+    decFitnessLabel: 'ਬਾਹਰੀ ਫਿਟਨੈਸ ਅਤੇ ਖੇਡਾਂ',
+    decRainLabel: 'ਮੀਂਹ ਦਾ ਖਤਰਾ / ਬਾਹਰੀ ਸਮਾਗਮ',
+    decLaundryLabel: 'ਕੱਪੜੇ ਧੋਣਾ ਅਤੇ ਧੁੱਪੇ ਸੁਕਾਉਣਾ',
+    decMaskLabel: 'ਸਿਹਤ ਅਤੇ ਪ੍ਰਦੂਸ਼ਣ ਰੋਕਥਾਮ ਕਾਰਵਾਈ',
+    probableTempLabel: 'ਸੰਭਾਵੀ ਅਧਿਕਤਮ ਤਾਪਮਾਨ',
+    probableSpreadLabel: 'ਮਾਡਲ ਅੰਤਰ / ਪ੍ਰਸਾਰ',
+    probablePrecipLabel: 'ਸੰਭਾਵੀ ਕੁੱਲ ਮੀਂਹ',
+    probableAgreementLabel: 'ਮੀਂਹ ਮਾਡਲ ਸਹਿਮਤੀ',
+    breakdownTitle: 'ਲਾਈਵ ਨਿੱਜੀ ਮੌਸਮ ਮਾਡਲ ਵੇਰਵਾ (IMD, NOAA GFS, ECMWF, ICON, GEM, ARPEGE)',
+    modelCondition: 'ਸਥਿਤੀ',
+    modelRain: 'ਕੁੱਲ ਮੀਂਹ',
+    modelWind: 'ਅਧਿਕਤਮ ਹਵਾ',
+    fitness_favorable: 'ਬਹੁਤ ਅਨੁਕੂਲ — ਬਾਹਰ ਦੌੜਨ ਅਤੇ ਖੇਡਾਂ ਲਈ ਵਧੀਆ ਮੌਸਮ।',
+    fitness_caution: 'ਸਾਵਧਾਨੀ ਵਰਤੋ — ਬਹੁਤ ਜ਼ਿਆਦਾ ਗਰਮੀ। ਪਾਣੀ ਪੀਓ ਅਤੇ ਦੁਪਹਿਰ ਦੀ ਧੁੱਪ ਤੋਂ ਬਚੋ।',
+    fitness_indoor: 'ਘਰ ਦੇ ਅੰਦਰ ਕਸਰਤ ਕਰਨ ਦੀ ਸਲਾਹ — ਬਾਹਰ ਮੀਂਹ ਪੈ ਰਿਹਾ ਹੈ।',
+    fitness_pollution: 'ਬਾਹਰੀ ਮਿਹਨਤ ਘਟਾਓ — ਕਸਰਤ ਲਈ ਹਵਾ ਦੀ ਗੁਣਵੱਤਾ ਖਰਾਬ ਹੈ।',
+    rain_low: 'ਘੱਟ ਖਤਰਾ — ਸਾਰੇ ਮਾਡਲ ਖੁਸ਼ਕ ਮੌਸਮ ਦੀ ਭਵਿੱਖਬਾਣੀ ਕਰ ਰਹੇ ਹਨ।',
+    rain_high: 'ਮੀਂਹ ਦਾ ਭਾਰੀ ਖਤਰਾ — ਕਈ ਮਾਡਲਾਂ ਨੇ ਮੀਂਹ ਦੀ ਪੁਸ਼ਟੀ ਕੀਤੀ। ਛਤਰੀ ਜ਼ਰੂਰ ਰੱਖੋ!',
+    rain_moderate: 'ਦਰਮਿਆਨਾ ਮੀਂਹ ਦਾ ਖਤਰਾ — ਹਲਕੀ ਬਾਰਿਸ਼ ਸੰਭਵ ਹੈ। ਬਦਲਵੀਂ ਯੋਜਨਾ ਰੱਖੋ।',
+    laundry_optimal: 'ਸੁਕਾਉਣ ਲਈ ਉੱਤਮ — ਨਿੱਘਾ ਤਾਪਮਾਨ ਅਤੇ ਸੁਹਾਵਣੀ ਹਵਾ।',
+    laundry_indoor: 'ਘਰ ਦੇ ਅੰਦਰ ਸੁਕਾਉਣ ਦੀ ਸਲਾਹ — ਬਾਹਰ ਕੱਪੜੇ ਗਿੱਲੇ ਹੋਣ ਦੀ ਪੂਰੀ ਸੰਭਾਵਨਾ ਹੈ।',
+    laundry_slow: 'ਹੌਲੀ ਸੁੱਕਣਗੇ — ਹਵਾ ਵਿੱਚ ਨਮੀ ਬਹੁਤ ਜ਼ਿਆਦਾ ਹੈ।',
+    mask_clear: 'ਸਾਫ਼ ਹਵਾ — ਆਮ ਲੋਕਾਂ ਲਈ ਮਾਸਕ ਦੀ ਲੋੜ ਨਹੀਂ ਹੈ।',
+    mask_mandatory: 'N95 ਮਾਸਕ ਲਾਜ਼ਮੀ — ਗੰਭੀਰ ਪ੍ਰਦੂਸ਼ਣ ਚਿਤਾਵਨੀ। ਖਿੜਕੀਆਂ ਬੰਦ ਰੱਖੋ।',
+    mask_recommended: 'N95 ਮਾਸਕ ਦੀ ਸਿਫ਼ਾਰਸ਼ — ਦਮੇ ਦੇ ਮਰੀਜ਼ ਅਤੇ ਸੰਵੇਦਨਸ਼ੀਲ ਲੋਕ ਸਾਵਧਾਨੀ ਵਰਤਣ।',
+    condition: "ਮੌਸਮ ਦੀ ਸਥਿਤੀ",
+    searchPlaceholder: "ਕੋਈ ਵੀ ਸ਼ਹਿਰ ਜਾਂ ਕੋਆਰਡੀਨੇਟ ਖੋਜੋ...",
+    comparePlaceholder: "ਦੂਜੇ ਸ਼ਹਿਰ ਨਾਲ ਤੁਲਨਾ ਕਰੋ...",
+    chatPlaceholder: "ਮੌਸਮ ਬਾਰੇ ਕੁਝ ਵੀ ਪੁੱਛੋ...",
+    today: "ਅੱਜ",
+    tomorrow: "ਭਲਕੇ",
   }
 };
+
+/* =========================================
+   Multilingual AQI Intelligence Dictionary
+   ========================================= */
+const AQI_TRANSLATIONS = {
+  en: {
+    title: 'Air Quality Index (AQI)',
+    loading: 'Loading live air quality data...',
+    ozone: 'Ozone (O₃)',
+    indexLabel: 'Index',
+    statuses: {
+      good: 'Good',
+      moderate: 'Moderate',
+      sensitive: 'Unhealthy for Sensitive Groups',
+      unhealthy: 'Unhealthy',
+      'very-unhealthy': 'Very Unhealthy',
+      hazardous: 'Hazardous'
+    },
+    advice: {
+      good: 'Air quality is satisfactory, and air pollution poses little or no risk. Enjoy outdoor activities!',
+      moderate: 'Air quality is acceptable. However, unusually sensitive people should consider reducing prolonged outdoor exertion.',
+      sensitive: 'Members of sensitive groups (children, elderly, asthmatics) may experience health effects. Wear a mask outdoors.',
+      unhealthy: 'Everyone may begin to experience health effects. Limit prolonged outdoor activities and wear an N95 mask.',
+      'very-unhealthy': 'Health alert: everyone may experience more serious health effects. Avoid outdoor exertion and keep windows closed.',
+      hazardous: 'Health warning of emergency conditions. Everyone should remain indoors and use air purifiers.'
+    }
+  },
+  hi: {
+    title: 'वायु गुणवत्ता सूचकांक (AQI)',
+    loading: 'लाइव वायु गुणवत्ता डेटा लोड हो रहा है...',
+    ozone: 'ओजोन (O₃)',
+    indexLabel: 'सूचकांक',
+    statuses: {
+      good: 'अच्छा',
+      moderate: 'मध्यम',
+      sensitive: 'संवेदनशील समूहों के लिए अस्वास्थ्यकर',
+      unhealthy: 'अस्वास्थ्यकर',
+      'very-unhealthy': 'बहुत अस्वास्थ्यकर',
+      hazardous: 'खतरनाक'
+    },
+    advice: {
+      good: 'वायु गुणवत्ता संतोषजनक है, और प्रदूषण से कोई जोखिम नहीं है। बाहरी गतिविधियों का आनंद लें!',
+      moderate: 'वायु गुणवत्ता स्वीकार्य है। हालांकि, संवेदनशील लोगों को लंबे समय तक बाहरी मेहनत कम करनी चाहिए।',
+      sensitive: 'संवेदनशील समूहों (बच्चों, बुजुर्गों, अस्थमा रोगियों) पर असर पड़ सकता है। बाहर मास्क पहनें।',
+      unhealthy: 'हर किसी के स्वास्थ्य पर असर पड़ सकता है। लंबे समय तक बाहर रहने से बचें और N95 मास्क पहनें।',
+      'very-unhealthy': 'स्वास्थ्य चेतावनी: गंभीर स्वास्थ्य प्रभाव पड़ सकते हैं। बाहर जाने से बचें और खिड़कियां बंद रखें।',
+      hazardous: 'आपातकालीन स्वास्थ्य चेतावनी। सभी को घर के अंदर रहना चाहिए और एयर प्यूरीफायर का उपयोग करना चाहिए।'
+    }
+  },
+  bn: {
+    title: 'বায়ু মান সূচক (AQI)',
+    loading: 'লাইভ বায়ু মানের তথ্য লোড হচ্ছে...',
+    ozone: 'ওজোন (O₃)',
+    indexLabel: 'সূচক',
+    statuses: {
+      good: 'ভালো',
+      moderate: 'মাঝারি',
+      sensitive: 'সংবেদনশীলদের জন্য অস্বাস্থ্যকর',
+      unhealthy: 'অস্বাস্থ্যকর',
+      'very-unhealthy': 'খুব অস্বাস্থ্যকর',
+      hazardous: 'বিপজ্জনক'
+    },
+    advice: {
+      good: 'বাতাসের মান সন্তোষজনক এবং দূষণের কোনো ঝুঁকি নেই। বাইরের কাজকর্ম নিশ্চিন্তে উপভোগ করুন!',
+      moderate: 'বায়ুর মান গ্রহণযোগ্য। তবে সংবেদনশীল ব্যক্তিদের দীর্ঘ সময় বাইরে অতিরিক্ত পরিশ্রম কমানো উচিত।',
+      sensitive: 'সংবেদনশীল ব্যক্তিরা (শিশু, বৃদ্ধ, হাঁপানি রোগী) অসুস্থতা অনুভব করতে পারেন। বাইরে মাস্ক পরুন।',
+      unhealthy: 'সবার স্বাস্থ্যের ওপর প্রভাব পড়তে পারে। বেশিক্ষণ বাইরে থাকা এড়িয়ে চলুন এবং N95 মাস্ক পরুন।',
+      'very-unhealthy': 'স্বাস্থ্য সতর্কতা: গুরুতর শারীরিক সমস্যা দেখা দিতে পারে। বাইরে পরিশ্রম এড়িয়ে চলুন ও জানালা বন্ধ রাখুন।',
+      hazardous: 'জরুরি স্বাস্থ্য সতর্কতা। সবাইকে ঘরের ভেতরে থাকা এবং এয়ার পিউরিফায়ার ব্যবহারের পরামর্শ দেওয়া হচ্ছে।'
+    }
+  },
+  ta: {
+    title: 'காற்றுத் தரக் குறியீடு (AQI)',
+    loading: 'நேரலை காற்றின் தரத் தரவு ஏற்றப்படுகிறது...',
+    ozone: 'ஓசோன் (O₃)',
+    indexLabel: 'குறியீடு',
+    statuses: {
+      good: 'நல்லது',
+      moderate: 'மிதமானது',
+      sensitive: 'உணர்திறன் கொண்டோருக்கு ஆரோக்கியமற்றது',
+      unhealthy: 'ஆரோக்கியமற்றது',
+      'very-unhealthy': 'மிகவும் ஆரோக்கியமற்றது',
+      hazardous: 'ஆபத்தானது'
+    },
+    advice: {
+      good: 'காற்றின் தரம் திருப்திகரமாக உள்ளது, மாசுக் காற்று ஆபத்தை ஏற்படுத்தாது. வெளிப்புற நிகழ்வுகளை அனுபவியுங்கள்!',
+      moderate: 'காற்றின் தரம் ஏற்றுக்கொள்ளத்தக்கது. ஆனால் உணர்திறன் கொண்டவர்கள் நீண்ட நேர வெளிப்புற உழைப்பைக் குறைக்கவும்.',
+      sensitive: 'முதியவர்கள், குழந்தைகள் மற்றும் ஆஸ்துமா உள்ளவர்கள் பாதிக்கப்படலாம். வெளியே முகக்கவசம் அணியுங்கள்.',
+      unhealthy: 'அனைவருக்கும் உடல்நலப் பாதிப்புகள் ஏற்படலாம். வெளிப்புறச் செயல்பாடுகளைக் கட்டுப்படுத்தி N95 முகக்கவசம் அணியுங்கள்.',
+      'very-unhealthy': 'சுகாதார எச்சரிக்கை: தீவிர பாதிப்புகள் ஏற்படலாம். வெளிப்புற உழைப்பைத் தவிர்த்து ஜன்னல்களை மூடுங்கள்.',
+      hazardous: 'அவசரகால சுகாதார எச்சரிக்கை. அனைவரும் வீட்டிற்குள் இருக்க வேண்டும், காற்று சுத்திகரிப்பான் பயன்படுத்தவும்.'
+    }
+  },
+  te: {
+    title: 'గాలి నాణ్యత సూచిక (AQI)',
+    loading: 'ప్రత్యక్ష గాలి నాణ్యత డేటా లోడ్ అవుతోంది...',
+    ozone: 'ఓజోన్ (O₃)',
+    indexLabel: 'సూచిక',
+    statuses: {
+      good: 'మంచిది',
+      moderate: 'మధ్యస్థం',
+      sensitive: 'సున్నిత వర్గాలకు అనారోగ్యకరం',
+      unhealthy: 'అనారోగ్యకరం',
+      'very-unhealthy': 'చాలా అనారోగ్యకరం',
+      hazardous: 'ప్రమాదకరమైనది'
+    },
+    advice: {
+      good: 'గాలి నాణ్యత సంతృప్తికరంగా ఉంది, ఎటువంటి ముప్పు లేదు. బహిరంగ కార్యకలాపాలను ఆస్వాదించండి!',
+      moderate: 'గాలి నాణ్యత ఆమోదయోగ్యమైనది. అయితే సున్నిత వ్యక్తులు ఎక్కువ సమయం బయట శ్రమించకూడదు.',
+      sensitive: 'సున్నిత వర్గాలు (పిల్లలు, వృద్ధులు, ఆస్తమా రోగులు) ప్రభావితం కావచ్చు. బయట మాస్క్ ధరించండి.',
+      unhealthy: 'అందరికీ ఆరోగ్య ప్రభావాలు ప్రారంభం కావచ్చు. ఎక్కువ సేపు బయట ఉండకండి, N95 మాస్క్ ధరించండి.',
+      'very-unhealthy': 'తీవ్ర ఆరోగ్య హెచ్చరిక: మరింత తీవ్ర ప్రభావాలు ఉండవచ్చు. బయటకు వెళ్లకండి మరియు కిటికీలు మూసివేయండి.',
+      hazardous: 'అత్యవసర ఆరోగ్య హెచ్చరిక. ప్రతి ఒక్కరూ ఇళ్లలోనే ఉండాలి మరియు ఎయిర్ ప్యూరిఫైయర్లను ఉపయోగించాలి.'
+    }
+  },
+  mr: {
+    title: 'हवा गुणवत्ता निर्देशांक (AQI)',
+    loading: 'थेट हवा गुणवत्ता डेटा लोड होत आहे...',
+    ozone: 'ओझोन (O₃)',
+    indexLabel: 'निर्देशांक',
+    statuses: {
+      good: 'चांगली',
+      moderate: 'मध्यम',
+      sensitive: 'संवेदनशील व्यक्तींसाठी अस्वास्थ्यकर',
+      unhealthy: 'अस्वास्थ्यकर',
+      'very-unhealthy': 'अतिशय अस्वास्थ्यकर',
+      hazardous: 'धोकादायक'
+    },
+    advice: {
+      good: 'हवेची गुणवत्ता समाधानकारक आहे, प्रदूषणाचा कोणताही धोका नाही. मैदानी उपक्रमांचा आनंद घ्या!',
+      moderate: 'हवेची गुणवत्ता स्वीकार्य आहे. तथापि, संवेदनशील व्यक्तींनी जास्त वेळ बाहेर शारीरिक कष्ट टाळावेत.',
+      sensitive: 'संवेदनशील व्यक्तींवर (मुले, वृद्ध, दम्याचे रुग्ण) परिणाम होऊ शकतो. बाहेर मास्क वापरा.',
+      unhealthy: 'सर्वांच्या आरोग्यावर परिणाम होऊ शकतो. जास्त वेळ बाहेर राहणे टाळा आणि N95 मास्क वापरा.',
+      'very-unhealthy': 'आरोग्य इशारा: प्रत्येकावर गंभीर परिणाम होऊ शकतात. बाहेर जाणे टाळा आणि खिडक्या बंद ठेवा.',
+      hazardous: 'आणीबाणीची आरोग्य चेतावणी. सर्वांनी घरामध्येच राहावे आणि एअर प्युरिफायर वापरावे.'
+    }
+  },
+  gu: {
+    title: 'વાયુ ગુણવત્તા સૂચકાંક (AQI)',
+    loading: 'લાઇવ વાયુ ગુણવત્તા ડેટા લોડ થઈ રહ્યો છે...',
+    ozone: 'ઓઝોન (O₃)',
+    indexLabel: 'સૂચકાંક',
+    statuses: {
+      good: 'સારી',
+      moderate: 'મધ્યમ',
+      sensitive: 'સંવેદનશીલ જૂથો માટે અસ્વસ્થ',
+      unhealthy: 'અસ્વસ્થ',
+      'very-unhealthy': 'ખૂબ અસ્વસ્થ',
+      hazardous: 'જોખમી'
+    },
+    advice: {
+      good: 'હવાની ગુણવત્તા સંતોષકારક છે અને કોઈ જોખમ નથી. આઉટડોર પ્રવૃત્તિઓની મજા માણો!',
+      moderate: 'હવાની ગુણવત્તા સ્વીકાર્ય છે. જોકે સંવેદનશીલ લોકોએ વધુ સમય બહાર રહેવાનું ટાળવું જોઈએ.',
+      sensitive: 'બાળકો, વૃદ્ધો અને અસ્થમાના દર્દીઓ પર અસર થઈ શકે છે. બહાર માસ્ક પહેરો.',
+      unhealthy: 'દરેકના સ્વાસ્થ્ય પર અસર થઈ શકે છે. લાંબો સમય બહાર રહેવાનું ટાળો અને N95 માસ્ક પહેરો.',
+      'very-unhealthy': 'આરોગ્ય ચેતવણી: દરેક પર ગંભીર અસર થઈ શકે છે. બહાર જવાનું ટાળો અને બારીઓ બંધ રાખો.',
+      hazardous: 'કટોકટીની સ્થિતિની આરોગ્ય ચેતવણી. દરેક વ્યક્તિએ ઘરમાં જ રહેવું જોઈએ અને એર પ્યુરિફાયર વાપરવું જોઈએ.'
+    }
+  },
+  kn: {
+    title: 'ವಾಯು ಗುಣಮಟ್ಟ ಸೂಚ್ಯಂಕ (AQI)',
+    loading: 'ಲೈವ್ ವಾಯು ಗುಣಮಟ್ಟದ ಮಾಹಿತಿ ಲೋಡ್ ಆಗುತ್ತಿದೆ...',
+    ozone: 'ಓಝೋನ್ (O₃)',
+    indexLabel: 'ಸೂಚ್ಯಂಕ',
+    statuses: {
+      good: 'ಉತ್ತಮ',
+      moderate: 'ಮಧ್ಯಮ',
+      sensitive: 'ಸೂಕ್ಷ್ಮ ಜನರಿಗೆ ಹಾನಿಕಾರಕ',
+      unhealthy: 'ಹಾನಿಕಾರಕ',
+      'very-unhealthy': 'ಬಹಳ ಹಾನಿಕಾರಕ',
+      hazardous: 'ಅಪಾಯಕಾರಿ'
+    },
+    advice: {
+      good: 'ಗಾಳಿಯ ಗುಣಮಟ್ಟ ತೃಪ್ತಿಕರವಾಗಿದೆ, ಯಾವುದೇ ಅಪಾಯವಿಲ್ಲ. ಹೊರಾಂಗಣ ಚಟುವಟಿಕೆಗಳನ್ನು ಆನಂದಿಸಿ!',
+      moderate: 'ಗಾಳಿಯ ಗುಣಮಟ್ಟ ಸ್ವೀಕಾರಾರ್ಹವಾಗಿದೆ. ಆದರೆ ಸೂಕ್ಷ್ಮ ಆರೋಗ್ಯದವರು ಹೆಚ್ಚು ಹೊತ್ತು ಹೊರಗಿನ ಶ್ರಮ ಕಡಿಮೆ ಮಾಡಬೇಕು.',
+      sensitive: 'ಮಕ್ಕಳು, ಹಿರಿಯರು ಮತ್ತು ಅಸ್ತಮಾ ರೋಗಿಗಳ ಮೇಲೆ ಪರಿಣಾಮ ಬೀರಬಹುದು. ಹೊರಗೆ ಮಾಸ್ಕ್ ಧರಿಸಿ.',
+      unhealthy: 'ಎಲ್ಲರ ಆರೋಗ್ಯದ ಮೇಲೂ ಪರಿಣಾಮ ಬೀರಬಹುದು. ಹೆಚ್ಚು ಹೊತ್ತು ಹೊರಗಿರುವುದನ್ನು ತಪ್ಪಿಸಿ ಮತ್ತು N95 ಮಾಸ್ಕ್ ಧರಿಸಿ.',
+      'very-unhealthy': 'ಆರೋಗ್ಯ ಎಚ್ಚರಿಕೆ: ಗಂಭೀರ ಆರೋಗ್ಯ ಪರಿಣಾಮಗಳು ಉಂಟಾಗಬಹುದು. ಹೊರಗಿನ ಶ್ರಮ ತಪ್ಪಿಸಿ ಕಿಟಕಿಗಳನ್ನು ಮುಚ್ಚಿಡಿ.',
+      hazardous: 'ತುರ್ತು ಪರಿಸ್ಥಿತಿಯ ಆರೋಗ್ಯ ಎಚ್ಚರಿಕೆ. ಎಲ್ಲರೂ ಮನೆಯೊಳಗೆ ಇರಬೇಕು ಮತ್ತು ಏರ್ ಪ್ಯೂರಿಫೈಯರ್ ಬಳಸಬೇಕು.'
+    }
+  },
+  pa: {
+    title: 'ਹਵਾ ਗੁਣਵੱਤਾ ਸੂਚਕ ਅੰਕ (AQI)',
+    loading: 'ਲਾਈਵ ਹਵਾ ਗੁਣਵੱਤਾ ਡੇਟਾ ਲੋਡ ਹੋ ਰਿਹਾ ਹੈ...',
+    ozone: 'ਓਜ਼ੋਨ (O₃)',
+    indexLabel: 'ਸੂਚਕ ਅੰਕ',
+    statuses: {
+      good: 'ਚੰਗਾ',
+      moderate: 'ਦਰਮਿਆਨਾ',
+      sensitive: 'ਸੰਵੇਦਨਸ਼ੀਲ ਲੋਕਾਂ ਲਈ ਅਸਿਹਤਮੰਦ',
+      unhealthy: 'ਅਸਿਹਤਮੰਦ',
+      'very-unhealthy': 'ਬਹੁਤ ਅਸਿਹਤਮੰਦ',
+      hazardous: 'ਖਤਰਨਾਕ'
+    },
+    advice: {
+      good: 'ਹਵਾ ਦੀ ਗੁਣਵੱਤਾ ਤਸੱਲੀਬਖ਼ਸ਼ ਹੈ, ਕੋਈ ਖਤਰਾ ਨਹੀਂ ਹੈ। ਬਾਹਰੀ ਗਤੀਵਿਧੀਆਂ ਦਾ ਆਨੰਦ ਲਓ!',
+      moderate: 'ਹਵਾ ਦੀ ਗੁਣਵੱਤਾ ਸਵੀਕਾਰਯੋਗ ਹੈ। ਪਰ ਸੰਵੇਦਨਸ਼ੀਲ ਲੋਕਾਂ ਨੂੰ ਲੰਬੇ ਸਮੇਂ ਤੱਕ ਬਾਹਰੀ ਮਿਹਨਤ ਘਟਾਉਣੀ ਚਾਹੀਦੀ ਹੈ।',
+      sensitive: 'ਬੱਚੇ, ਬਜ਼ੁਰਗ ਅਤੇ ਦਮੇ ਦੇ ਮਰੀਜ਼ ਪ੍ਰਭਾਵਿਤ ਹੋ ਸਕਦੇ ਹਨ। ਬਾਹਰ ਮਾਸਕ ਪਾਓ।',
+      unhealthy: 'ਹਰੇਕ ਦੀ ਸਿਹਤ \'ਤੇ ਅਸਰ ਪੈ ਸਕਦਾ ਹੈ। ਬਾਹਰ ਰਹਿਣ ਤੋਂ ਬਚੋ ਅਤੇ N95 ਮਾਸਕ ਪਾਓ।',
+      'very-unhealthy': 'ਸਿਹਤ ਚਿਤਾਵਨੀ: ਗੰਭੀਰ ਸਿਹਤ ਪ੍ਰਭਾਵ ਪੈ ਸਕਦੇ ਹਨ। ਬਾਹਰ ਜਾਣ ਤੋਂ ਬਚੋ ਅਤੇ ਖਿੜਕੀਆਂ ਬੰਦ ਰੱਖੋ।',
+      hazardous: 'ਐਮਰਜੈਂਸੀ ਸਿਹਤ ਚਿਤਾਵਨੀ। ਸਾਰਿਆਂ ਨੂੰ ਘਰ ਦੇ ਅੰਦਰ ਰਹਿਣਾ ਚਾਹੀਦਾ ਹੈ ਅਤੇ ਏਅਰ ਪਿਊਰੀਫਾਇਰ ਦੀ ਵਰਤੋਂ ਕਰਨੀ ਚਾਹੀਦੀ ਹੈ।'
+    }
+  }
+};
+
+
+/* =========================================
+   Multilingual Weather Condition Mapping (WMO Standards)
+   ========================================= */
+const WEATHER_CONDITIONS = {
+  en: {
+    clear: 'Clear Sky',
+    mainlyClear: 'Mainly Clear',
+    partlyCloudy: 'Partly Cloudy',
+    overcast: 'Overcast',
+    fog: 'Fog',
+    drizzle: 'Drizzle',
+    rain: 'Rain',
+    heavyRain: 'Heavy Rain',
+    snow: 'Snow',
+    showers: 'Rain Showers',
+    thunderstorm: 'Thunderstorm'
+  },
+  hi: {
+    clear: 'साफ़ आसमान',
+    mainlyClear: 'अधिकांशतः साफ़',
+    partlyCloudy: 'आंशिक रूप से बादल',
+    overcast: 'घने बादल',
+    fog: 'कोहरा',
+    drizzle: 'बूंदाबांदी',
+    rain: 'बारिश',
+    heavyRain: 'तेज बारिश',
+    snow: 'बर्फबारी',
+    showers: 'बारिश की फुहारें',
+    thunderstorm: 'आंधी-तूफान'
+  },
+  bn: {
+    clear: 'পরিষ্কার আকাশ',
+    mainlyClear: 'বেশিরভাগ পরিষ্কার',
+    partlyCloudy: 'আংশিক মেঘলা',
+    overcast: 'মেঘলা আকাশ',
+    fog: 'কুয়াশা',
+    drizzle: 'গুঁড়ি গুঁড়ি বৃষ্টি',
+    rain: 'বৃষ্টি',
+    heavyRain: 'ভারী বৃষ্টি',
+    snow: 'তুষারপাত',
+    showers: 'বৃষ্টির সম্ভাবনা',
+    thunderstorm: 'বজ্রঝড়'
+  },
+  ta: {
+    clear: 'தெளிவான வானம்',
+    mainlyClear: 'பெரும்பாலும் தெளிவானது',
+    partlyCloudy: 'பகுதி மேகமூட்டம்',
+    overcast: 'மேகமூட்டம்',
+    fog: 'பனிமூட்டம்',
+    drizzle: 'தூறல்',
+    rain: 'மழை',
+    heavyRain: 'கனமழை',
+    snow: 'பனிப்பொழிவு',
+    showers: 'மழைத்தூறல்',
+    thunderstorm: 'இடியுடன் கூடிய மழை'
+  },
+  te: {
+    clear: 'నిర్మలమైన ఆకాశం',
+    mainlyClear: 'ఎక్కువగా నిర్మలంగా',
+    partlyCloudy: 'పాక్షికంగా మేఘావృతం',
+    overcast: 'పూర్తిగా మేఘావృతం',
+    fog: 'పొగమంచు',
+    drizzle: 'జల్లులు',
+    rain: 'వర్షం',
+    heavyRain: 'భారీ వర్షం',
+    snow: 'మంచు కురవడం',
+    showers: 'వర్షపు జల్లులు',
+    thunderstorm: 'ఉరుములతో కూడిన వర్షం'
+  },
+  mr: {
+    clear: 'निरभ्र आकाश',
+    mainlyClear: 'बहुतांश निरभ्र',
+    partlyCloudy: 'अंशतः ढगाळ',
+    overcast: 'ढगाळ वातावरण',
+    fog: 'धुके',
+    drizzle: 'रिमझिम पाऊस',
+    rain: 'पाऊस',
+    heavyRain: 'मुसळधार पाऊस',
+    snow: 'बर्फवृष्टी',
+    showers: 'पावसाच्या सरी',
+    thunderstorm: 'वादळी पाऊस'
+  },
+  gu: {
+    clear: 'ચોખ્ખું આકાશ',
+    mainlyClear: 'મોટાભાગે ચોખ્ખું',
+    partlyCloudy: 'આંશિક વાદળછાયું',
+    overcast: 'વાદળછાયું વાતાવરણ',
+    fog: 'ધુમ્મસ',
+    drizzle: 'ઝરમર વરસાદ',
+    rain: 'વરસાદ',
+    heavyRain: 'ભારે વરસાદ',
+    snow: 'હિમવર્ષા',
+    showers: 'વરસાદી ઝાપટાં',
+    thunderstorm: 'ગાજવીજ સાથે વરસાદ'
+  },
+  kn: {
+    clear: 'ಸ್ವಚ್ಛ ಆಕಾಶ',
+    mainlyClear: 'ಹೆಚ್ಚಾಗಿ ಸ್ವಚ್ಛ',
+    partlyCloudy: 'ಭಾಗಶಃ ಮೋಡ',
+    overcast: 'ಮೋಡ ಕವಿದ ವಾತಾವರಣ',
+    fog: 'ಮಂಜು',
+    drizzle: 'ಚಿಮುಕಿಸುವ ಮಳೆ',
+    rain: 'ಮಳೆ',
+    heavyRain: 'ಭಾರಿ ಮಳೆ',
+    snow: 'ಹಿಮಪಾತ',
+    showers: 'ಮಳೆಯ ತುಂತುರು',
+    thunderstorm: 'ಗುಡುಗು ಸಹಿತ ಮಳೆ'
+  },
+  pa: {
+    clear: 'ਸਾਫ਼ ਅਸਮਾਨ',
+    mainlyClear: 'ਜ਼ਿਆਦਾਤਰ ਸਾਫ਼',
+    partlyCloudy: 'ਅੰਸ਼ਕ ਤੌਰ \'ਤੇ ਬੱਦਲਵਾਈ',
+    overcast: 'ਬੱਦਲਵਾਈ',
+    fog: 'ਧੁੰਦ',
+    drizzle: 'ਫੁਹਾਰ',
+    rain: 'ਮੀਂਹ',
+    heavyRain: 'ਭਾਰੀ ਮੀਂਹ',
+    snow: 'ਬਰਫ਼ਬਾਰੀ',
+    showers: 'ਮੀਂਹ ਦੀਆਂ ਬੁਛਾੜਾਂ',
+    thunderstorm: 'ਗਰਜ ਨਾਲ ਤੂਫ਼ਾਨ'
+  }
+};
+
+function getLocalizedWeatherCondition(code, fallbackDesc = '', lang = state.language) {
+  const c = WEATHER_CONDITIONS[lang] || WEATHER_CONDITIONS.en;
+  if (code === 0) return c.clear;
+  if (code === 1) return c.mainlyClear;
+  if (code === 2) return c.partlyCloudy;
+  if (code === 3) return c.overcast;
+  if (code === 45 || code === 48) return c.fog;
+  if (code >= 51 && code <= 57) return c.drizzle;
+  if (code >= 61 && code <= 67) return (code >= 65) ? c.heavyRain : c.rain;
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return c.snow;
+  if (code >= 80 && code <= 82) return c.showers;
+  if (code >= 95) return c.thunderstorm;
+
+  if (fallbackDesc) {
+    const lower = fallbackDesc.toLowerCase();
+    if (lower.includes('clear')) return c.clear;
+    if (lower.includes('cloud')) return c.partlyCloudy;
+    if (lower.includes('overcast')) return c.overcast;
+    if (lower.includes('fog') || lower.includes('mist')) return c.fog;
+    if (lower.includes('drizzle')) return c.drizzle;
+    if (lower.includes('heavy rain')) return c.heavyRain;
+    if (lower.includes('rain') || lower.includes('shower')) return c.showers;
+    if (lower.includes('thunder') || lower.includes('storm')) return c.thunderstorm;
+    if (lower.includes('snow')) return c.snow;
+  }
+  return fallbackDesc || c.clear;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   weatherCanvas = new WeatherCanvas('weather-canvas');
@@ -278,6 +994,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initComparisonHandlers();
   initVoiceEngine();
   initWeatherAlerts();
+  initModelBreakdownDropdown();
+  initNavScrollButtons();
 
   if ($('toggleGptBtn')) {
     $('toggleGptBtn').addEventListener('click', () => {
@@ -312,10 +1030,57 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  addChatMessage('ai', '**Hello!** I am WeatherGPT, powered by Google Gemini. Search for any location or ask me anything about the forecast, outdoor activities, or what to wear today.');
+  addChatMessage('ai', '**Hello!** I am RituGPT, powered by Google Gemini. Search for any location or ask me anything about the forecast, outdoor activities, or what to wear today.');
 
   searchLocation('Kolkata');
 });
+
+function initModelBreakdownDropdown() {
+  const btn = $('toggle-model-breakdown-btn');
+  const dropdown = $('model-breakdown-dropdown');
+  if (!btn || !dropdown) return;
+
+  btn.addEventListener('click', () => {
+    const isHidden = dropdown.classList.contains('hidden');
+    if (isHidden) {
+      dropdown.classList.remove('hidden');
+      btn.classList.add('active');
+      btn.setAttribute('aria-expanded', 'true');
+    } else {
+      dropdown.classList.add('hidden');
+      btn.classList.remove('active');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+
+function initNavScrollButtons() {
+  const navItems = [
+    { btnId: 'nav-ai-btn', targetId: 'multimodel-section' },
+    { btnId: 'nav-aqi-btn', targetId: 'aqi-section' },
+    { btnId: 'nav-trends-btn', targetId: 'trends-section' }
+  ];
+
+  navItems.forEach(({ btnId, targetId }) => {
+    const btn = $(btnId);
+    if (!btn) return;
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const weatherSection = $('weather-section');
+      if (weatherSection && weatherSection.classList.contains('hidden')) {
+        weatherSection.classList.remove('hidden');
+      }
+      const target = $(targetId);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        target.classList.add('pulse-highlight');
+        setTimeout(() => {
+          target.classList.remove('pulse-highlight');
+        }, 1800);
+      }
+    });
+  });
+}
 
 function openAssistantWindow() {
   const sidebar = $('gptSidebar');
@@ -358,6 +1123,13 @@ function initLanguageSelector() {
   select.addEventListener('change', (e) => {
     state.language = e.target.value;
     applyLanguage(state.language);
+    if (state.aqi) {
+      renderAqiSection(state.aqi);
+    }
+    if (state.current) {
+      renderDecisionEngine(state.current, state.multimodel, state.aqi);
+      renderMultiModelSection(state.multimodel);
+    }
   });
 }
 
@@ -368,6 +1140,10 @@ function applyLanguage(lang) {
   if ($('btn-search')) $('btn-search').textContent = dict.searchBtn;
   if ($('txt-compare-btn')) $('txt-compare-btn').textContent = dict.compareBtn;
   if ($('txt-gpt-btn')) $('txt-gpt-btn').textContent = dict.askGptBtn;
+  if ($('txt-chat-header-title')) $('txt-chat-header-title').textContent = dict.askGptBtn;
+  if ($('txt-nav-ai-btn')) $('txt-nav-ai-btn').textContent = dict.navAiBtn;
+  if ($('txt-nav-aqi-btn')) $('txt-nav-aqi-btn').textContent = dict.navAqiBtn;
+  if ($('txt-nav-trends-btn')) $('txt-nav-trends-btn').textContent = dict.navTrendsBtn;
   if ($('txt-compare-title')) $('txt-compare-title').textContent = dict.compareTitle;
   if ($('txt-feels-like')) $('txt-feels-like').textContent = dict.feelsLike;
   if ($('lbl-humidity')) $('lbl-humidity').textContent = dict.humidity;
@@ -385,6 +1161,45 @@ function applyLanguage(lang) {
   if ($('txt-daily-hint')) $('txt-daily-hint').textContent = dict.dailyHint;
   if ($('txt-trends-title')) $('txt-trends-title').textContent = dict.trendsTitle;
   if ($('txt-footer')) $('txt-footer').textContent = dict.footer;
+  if ($('city-input')) $('city-input').placeholder = dict.searchPlaceholder || 'Search any city or coordinates...';
+  if ($('compare-city-input')) $('compare-city-input').placeholder = dict.comparePlaceholder || 'Compare another city...';
+  if ($('chat-input')) $('chat-input').placeholder = dict.chatPlaceholder || 'Ask anything about the weather...';
+  if (state.current && $('current-desc')) $('current-desc').textContent = getLocalizedWeatherCondition(state.current.weatherCode, state.current.weatherDescription, lang);
+  if (state.forecast && state.forecast.daily) renderDailyForecast(state.forecast.daily);
+  if (state.comparisonLocation && state.comparisonCurrent) renderComparisonGrid();
+
+  // Multi-Model Ensemble & Decision Engine localization
+  if ($('txt-multimodel-title')) $('txt-multimodel-title').textContent = dict.multimodelTitle;
+  if ($('txt-model-breakdown-btn')) $('txt-model-breakdown-btn').textContent = dict.modelBreakdownBtn;
+  if ($('txt-decisions-title')) $('txt-decisions-title').textContent = dict.decisionsTitle;
+  if ($('lbl-dec-fitness')) $('lbl-dec-fitness').textContent = dict.decFitnessLabel;
+  if ($('lbl-dec-rain')) $('lbl-dec-rain').textContent = dict.decRainLabel;
+  if ($('lbl-dec-laundry')) $('lbl-dec-laundry').textContent = dict.decLaundryLabel;
+  if ($('lbl-dec-mask')) $('lbl-dec-mask').textContent = dict.decMaskLabel;
+  if ($('lbl-probable-temp')) $('lbl-probable-temp').textContent = dict.probableTempLabel;
+  if ($('lbl-probable-spread')) $('lbl-probable-spread').textContent = dict.probableSpreadLabel;
+  if ($('lbl-probable-precip')) $('lbl-probable-precip').textContent = dict.probablePrecipLabel;
+  if ($('lbl-probable-agreement')) $('lbl-probable-agreement').textContent = dict.probableAgreementLabel;
+  if ($('txt-breakdown-title')) $('txt-breakdown-title').textContent = dict.breakdownTitle;
+
+  // AQI Localization
+  const aqiDict = AQI_TRANSLATIONS[lang] || AQI_TRANSLATIONS.en;
+  if ($('txt-aqi-title')) $('txt-aqi-title').textContent = aqiDict.title;
+  if ($('lbl-pollutant-ozone')) $('lbl-pollutant-ozone').textContent = aqiDict.ozone;
+
+  if (!state.aqi) {
+    if ($('aqi-advice')) $('aqi-advice').textContent = aqiDict.loading;
+    if ($('aqi-badge')) $('aqi-badge').textContent = `${aqiDict.statuses.good} (US AQI)`;
+    if ($('aqi-status')) $('aqi-status').textContent = `${aqiDict.statuses.good} ${aqiDict.indexLabel || 'Index'}`;
+  }
+
+  if (!state.current) {
+    if ($('dec-fitness')) $('dec-fitness').textContent = dict.evaluating;
+    if ($('dec-rain')) $('dec-rain').textContent = dict.evaluating;
+    if ($('dec-laundry')) $('dec-laundry').textContent = dict.evaluating;
+    if ($('dec-mask')) $('dec-mask').textContent = dict.evaluating;
+    if ($('model-consensus-score')) $('model-consensus-score').textContent = dict.evaluatingConsensus;
+  }
 
   // Update initial welcome message if user has not engaged in chat yet
   if (state.chatHistory.length === 0 && dict.welcome) {
@@ -441,7 +1256,7 @@ function toggleBookmark() {
     showToast(`Saved ${state.location.name} to favorites.`);
   }
 
-  localStorage.setItem('weathergpt_bookmarks', JSON.stringify(state.bookmarks));
+  localStorage.setItem('ritugpt_bookmarks', JSON.stringify(state.bookmarks));
   updateBookmarkStar();
   renderBookmarksBar();
 }
@@ -467,7 +1282,7 @@ function renderBookmarksBar() {
       if (e.target.classList.contains('remove-bm')) {
         e.stopPropagation();
         state.bookmarks = state.bookmarks.filter((b) => b.name !== bm.name);
-        localStorage.setItem('weathergpt_bookmarks', JSON.stringify(state.bookmarks));
+        localStorage.setItem('ritugpt_bookmarks', JSON.stringify(state.bookmarks));
         updateBookmarkStar();
         renderBookmarksBar();
       } else {
@@ -576,6 +1391,10 @@ function renderComparisonGrid() {
   const loc2 = state.comparisonLocation;
   const cur2 = state.comparisonCurrent;
 
+  const dict = TRANSLATIONS[state.language] || TRANSLATIONS.en;
+  const desc1 = getLocalizedWeatherCondition(cur1.weatherCode, cur1.weatherDescription, state.language);
+  const desc2 = getLocalizedWeatherCondition(cur2.weatherCode, cur2.weatherDescription, state.language);
+
   container.innerHTML = `
     <div class="compare-col">
       <div class="compare-col-header">
@@ -585,12 +1404,12 @@ function renderComparisonGrid() {
         </div>
         <div class="compare-temp-badge">${Math.round(cur1.temperature)}°C</div>
       </div>
-      <div class="compare-metric-row"><span class="compare-metric-label">Condition</span><span class="compare-metric-val">${cur1.weatherDescription}</span></div>
-      <div class="compare-metric-row"><span class="compare-metric-label">Feels Like</span><span class="compare-metric-val">${Math.round(cur1.feelsLike)}°C</span></div>
-      <div class="compare-metric-row"><span class="compare-metric-label">Humidity</span><span class="compare-metric-val">${Math.round(cur1.humidity)}%</span></div>
-      <div class="compare-metric-row"><span class="compare-metric-label">Wind Speed</span><span class="compare-metric-val">${cur1.windSpeed} km/h</span></div>
-      <div class="compare-metric-row"><span class="compare-metric-label">Rain</span><span class="compare-metric-val">${cur1.rain || 0} mm</span></div>
-      <div class="compare-metric-row"><span class="compare-metric-label">UV Index</span><span class="compare-metric-val">${cur1.uvIndex || 0}</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">${dict.condition || 'Condition'}</span><span class="compare-metric-val">${desc1}</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">${dict.feelsLike || 'Feels Like'}</span><span class="compare-metric-val">${Math.round(cur1.feelsLike)}°C</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">${dict.humidity || 'Humidity'}</span><span class="compare-metric-val">${Math.round(cur1.humidity)}%</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">${dict.wind || 'Wind Speed'}</span><span class="compare-metric-val">${cur1.windSpeed} km/h</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">${dict.rain || 'Rain'}</span><span class="compare-metric-val">${cur1.rain || 0} mm</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">${dict.uv || 'UV Index'}</span><span class="compare-metric-val">${cur1.uvIndex || 0}</span></div>
     </div>
 
     <div class="compare-col">
@@ -601,12 +1420,12 @@ function renderComparisonGrid() {
         </div>
         <div class="compare-temp-badge" style="color: var(--accent-2);">${Math.round(cur2.temperature)}°C</div>
       </div>
-      <div class="compare-metric-row"><span class="compare-metric-label">Condition</span><span class="compare-metric-val">${cur2.weatherDescription}</span></div>
-      <div class="compare-metric-row"><span class="compare-metric-label">Feels Like</span><span class="compare-metric-val">${Math.round(cur2.feelsLike)}°C</span></div>
-      <div class="compare-metric-row"><span class="compare-metric-label">Humidity</span><span class="compare-metric-val">${Math.round(cur2.humidity)}%</span></div>
-      <div class="compare-metric-row"><span class="compare-metric-label">Wind Speed</span><span class="compare-metric-val">${cur2.windSpeed} km/h</span></div>
-      <div class="compare-metric-row"><span class="compare-metric-label">Rain</span><span class="compare-metric-val">${cur2.rain || 0} mm</span></div>
-      <div class="compare-metric-row"><span class="compare-metric-label">UV Index</span><span class="compare-metric-val">${cur2.uvIndex || 0}</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">${dict.condition || 'Condition'}</span><span class="compare-metric-val">${desc2}</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">${dict.feelsLike || 'Feels Like'}</span><span class="compare-metric-val">${Math.round(cur2.feelsLike)}°C</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">${dict.humidity || 'Humidity'}</span><span class="compare-metric-val">${Math.round(cur2.humidity)}%</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">${dict.wind || 'Wind Speed'}</span><span class="compare-metric-val">${cur2.windSpeed} km/h</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">${dict.rain || 'Rain'}</span><span class="compare-metric-val">${cur2.rain || 0} mm</span></div>
+      <div class="compare-metric-row"><span class="compare-metric-label">${dict.uv || 'UV Index'}</span><span class="compare-metric-val">${cur2.uvIndex || 0}</span></div>
     </div>
   `;
 }
@@ -711,6 +1530,8 @@ function initVoiceEngine() {
   const micBtn = $('voice-input-btn');
   if (!micBtn) return;
 
+  micBtn.addEventListener('click', toggleVoiceInput);
+
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SpeechRecognition) {
     micBtn.title = 'Speech recognition not supported in this browser';
@@ -745,7 +1566,6 @@ function initVoiceEngine() {
     micBtn.classList.remove('mic-listening');
   };
 
-  micBtn.addEventListener('click', toggleVoiceInput);
 }
 
 function toggleVoiceInput() {
@@ -977,13 +1797,30 @@ function onGeolocate() {
   navigator.geolocation.getCurrentPosition(
     async (position) => {
       try {
+        let placeName = 'My Location';
+        let countryName = '';
+        try {
+          const revRes = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${position.coords.latitude}&longitude=${position.coords.longitude}&localityLanguage=en`
+          );
+          if (revRes.ok) {
+            const revData = await revRes.json();
+            placeName = revData.city || revData.locality || revData.principalSubdivision || 'My Location';
+            countryName = revData.countryName || '';
+          }
+        } catch (_) {}
+
         state.location = {
-          name: 'My Location',
-          country: '',
+          name: placeName,
+          country: countryName,
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
           timezone: 'auto'
         };
+
+        if ($('city-input')) {
+          $('city-input').value = placeName + (countryName ? `, ${countryName}` : '');
+        }
 
         await loadWeatherData();
         showWeatherSection();
@@ -1519,18 +2356,34 @@ function renderAllWeather() {
 function renderAqiSection(aqi) {
   if (!aqi) return;
 
+  const aqiDict = AQI_TRANSLATIONS[state.language] || AQI_TRANSLATIONS.en;
+  let level = aqi.level;
+  if (!level && aqi.usAqi != null) {
+    const score = Math.round(aqi.usAqi);
+    if (score <= 50) level = 'good';
+    else if (score <= 100) level = 'moderate';
+    else if (score <= 150) level = 'sensitive';
+    else if (score <= 200) level = 'unhealthy';
+    else if (score <= 300) level = 'very-unhealthy';
+    else level = 'hazardous';
+  }
+  if (!level) level = 'good';
+
+  const localizedStatus = (aqiDict.statuses && aqiDict.statuses[level]) || aqi.status || 'Good';
+  const localizedAdvice = (aqiDict.advice && aqiDict.advice[level]) || aqi.advice || 'Live air quality data updated.';
+
   const scoreEl = $('aqi-score');
   const statusEl = $('aqi-status');
   const badgeEl = $('aqi-badge');
   const adviceEl = $('aqi-advice');
 
   if (scoreEl) scoreEl.textContent = aqi.usAqi != null ? Math.round(aqi.usAqi) : '--';
-  if (statusEl) statusEl.textContent = `${aqi.status || 'US AQI'} Index`;
-  if (adviceEl) adviceEl.textContent = aqi.advice || 'Live air quality data updated.';
+  if (statusEl) statusEl.textContent = `${localizedStatus} ${aqiDict.indexLabel || 'Index'}`;
+  if (adviceEl) adviceEl.textContent = localizedAdvice;
 
   if (badgeEl) {
-    badgeEl.textContent = `${aqi.status || 'Good'} (US AQI)`;
-    badgeEl.className = `aqi-badge status-${aqi.level || 'good'}`;
+    badgeEl.textContent = `${localizedStatus} (US AQI)`;
+    badgeEl.className = `aqi-badge status-${level}`;
   }
 
   const pol = aqi.pollutants || {};
@@ -1548,10 +2401,11 @@ function renderMultiModelSection(multimodel) {
   const consensusEl = $('model-consensus-score');
   if (!multimodel || !multimodel.models) return;
 
+  const dict = TRANSLATIONS[state.language] || TRANSLATIONS.en;
   const cons = multimodel.consensus || {};
   if (consensusEl) {
     const score = cons.confidenceScore || 95;
-    consensusEl.textContent = `${score}% Model Consensus Agreement`;
+    consensusEl.textContent = `${score}% ${dict.consensusAgreement || 'Model Consensus Agreement'}`;
   }
 
   // Populate Probable Synthesized Forecast Summary
@@ -1571,9 +2425,9 @@ function renderMultiModelSection(multimodel) {
           <span class="model-name">${m.name}</span>
           <span class="model-temp">${m.tempMax != null ? `${Math.round(m.tempMax)}°C` : '--'}</span>
         </div>
-        <div class="model-row"><span class="model-row-label">Condition</span><span class="model-row-val">${m.description}</span></div>
-        <div class="model-row"><span class="model-row-label">Rain Sum</span><span class="model-row-val">${m.precip != null ? `${m.precip} mm` : '0 mm'}</span></div>
-        <div class="model-row"><span class="model-row-label">Max Wind</span><span class="model-row-val">${m.windSpeed != null ? `${Math.round(m.windSpeed)} km/h` : '--'}</span></div>
+        <div class="model-row"><span class="model-row-label">${dict.modelCondition || 'Condition'}</span><span class="model-row-val">${m.description}</span></div>
+        <div class="model-row"><span class="model-row-label">${dict.modelRain || 'Rain Sum'}</span><span class="model-row-val">${m.precip != null ? `${m.precip} mm` : '0 mm'}</span></div>
+        <div class="model-row"><span class="model-row-label">${dict.modelWind || 'Max Wind'}</span><span class="model-row-val">${m.windSpeed != null ? `${Math.round(m.windSpeed)} km/h` : '--'}</span></div>
       `;
       container.appendChild(card);
     });
@@ -1583,6 +2437,8 @@ function renderMultiModelSection(multimodel) {
 function renderDecisionEngine(current, multimodel, aqi) {
   if (!current) return;
 
+  const dict = TRANSLATIONS[state.language] || TRANSLATIONS.en;
+
   const temp = current.temperature || 25;
   const rain = current.rain || 0;
   const wind = current.windSpeed || 10;
@@ -1590,28 +2446,28 @@ function renderDecisionEngine(current, multimodel, aqi) {
   const cons = multimodel?.consensus || {};
 
   // 1. Fitness & Outdoor Activity Decision
-  let fitnessDec = 'Highly Favorable — Great conditions for outdoor running & sports.';
-  if (temp >= 36) fitnessDec = 'Exercise Caution — High thermal stress. Hydrate & avoid peak afternoon sun.';
-  else if (rain >= 3) fitnessDec = 'Indoor Workout Suggested — Rain showers active outdoors.';
-  else if (usAqi > 120) fitnessDec = 'Reduce Outdoor Exertion — Air quality is degraded for cardio workouts.';
+  let fitnessDec = dict.fitness_favorable;
+  if (temp >= 36) fitnessDec = dict.fitness_caution;
+  else if (rain >= 3) fitnessDec = dict.fitness_indoor;
+  else if (usAqi > 120) fitnessDec = dict.fitness_pollution;
   if ($('dec-fitness')) $('dec-fitness').textContent = fitnessDec;
 
   // 2. Rain & Outdoor Event Risk Decision
-  let rainDec = 'Low Risk — Dry conditions predicted across ensemble models.';
-  if (cons.rainPercentage >= 75 || rain >= 5) rainDec = 'High Rain Risk — Multiple models confirm precipitation. Carry umbrella!';
-  else if (cons.rainPercentage >= 25 || rain > 0) rainDec = 'Moderate Rain Risk — Scattered light showers possible. Have a backup plan.';
+  let rainDec = dict.rain_low;
+  if (cons.rainPercentage >= 75 || rain >= 5) rainDec = dict.rain_high;
+  else if (cons.rainPercentage >= 25 || rain > 0) rainDec = dict.rain_moderate;
   if ($('dec-rain')) $('dec-rain').textContent = rainDec;
 
   // 3. Laundry & Sun Drying Decision
-  let laundryDec = 'Optimal Drying — Warm temperatures & fair breezes.';
-  if (rain > 0.5 || cons.rainPercentage >= 50) laundryDec = 'Indoor Drying Advised — High likelihood of wet clothes outdoors.';
-  else if (current.humidity >= 85) laundryDec = 'Slow Drying Speed — High relative humidity in ambient air.';
+  let laundryDec = dict.laundry_optimal;
+  if (rain > 0.5 || cons.rainPercentage >= 50) laundryDec = dict.laundry_indoor;
+  else if (current.humidity >= 85) laundryDec = dict.laundry_slow;
   if ($('dec-laundry')) $('dec-laundry').textContent = laundryDec;
 
   // 4. Health & Mask Action Decision
-  let maskDec = 'Clear Air — No protective mask required for general public.';
-  if (usAqi > 200) maskDec = 'N95 Mask Mandatory — Severe pollution alert. Keep windows closed.';
-  else if (usAqi > 100) maskDec = 'N95 Mask Recommended — Sensitive groups & asthmatics take precaution.';
+  let maskDec = dict.mask_clear;
+  if (usAqi > 200) maskDec = dict.mask_mandatory;
+  else if (usAqi > 100) maskDec = dict.mask_recommended;
   if ($('dec-mask')) $('dec-mask').textContent = maskDec;
 }
 
@@ -1626,7 +2482,7 @@ function renderCurrentWeather(current) {
   $('country').textContent = state.location.country || '';
   $('current-temp').textContent = Math.round(current.temperature);
   $('current-icon').innerHTML = getWeatherIcon(current.weatherCode, current.isDay);
-  $('current-desc').textContent = current.weatherDescription;
+  $('current-desc').textContent = getLocalizedWeatherCondition(current.weatherCode, current.weatherDescription, state.language);
   $('feels-like').textContent = Math.round(current.feelsLike);
   $('humidity').textContent = `${Math.round(current.humidity)}%`;
   $('wind').textContent = `${current.windSpeed} km/h`;
@@ -1925,7 +2781,7 @@ async function onChatSubmit(event) {
       const data = await response.json();
       removeTypingIndicator();
       if (!data.success || !data.answer) {
-        throw new Error(data.error || 'WeatherGPT is having trouble responding right now.');
+        throw new Error(data.error || 'RituGPT is having trouble responding right now.');
       }
       addChatMessage('ai', data.answer);
       state.chatHistory.push({ role: 'assistant', content: data.answer });
@@ -1936,9 +2792,9 @@ async function onChatSubmit(event) {
     if (streamingBubble) {
       streamingBubble.innerHTML = formatMarkdown(accumulatedText ? `${accumulatedText}\n\n*(Error: ${error.message})*` : error.message);
     } else {
-      addChatMessage('ai', error.message || 'WeatherGPT is having trouble responding right now.');
+      addChatMessage('ai', error.message || 'RituGPT is having trouble responding right now.');
     }
-    showToast(error.message || 'WeatherGPT is having trouble responding right now.');
+    showToast(error.message || 'RituGPT is having trouble responding right now.');
   } finally {
     isChatSubmitting = false;
     if (submitBtn) submitBtn.disabled = false;
@@ -2109,10 +2965,28 @@ function formatDay(dateString) {
   const tomorrow = new Date();
   tomorrow.setDate(today.getDate() + 1);
 
-  if (date.toDateString() === today.toDateString()) return 'Today';
-  if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+  const dict = TRANSLATIONS[state.language] || TRANSLATIONS.en;
 
-  return date.toLocaleDateString([], { weekday: 'short' });
+  if (date.toDateString() === today.toDateString()) return dict.today || 'Today';
+  if (date.toDateString() === tomorrow.toDateString()) return dict.tomorrow || 'Tomorrow';
+
+  const localeMap = {
+    en: 'en-US',
+    hi: 'hi-IN',
+    bn: 'bn-IN',
+    ta: 'ta-IN',
+    te: 'te-IN',
+    mr: 'mr-IN',
+    gu: 'gu-IN',
+    kn: 'kn-IN',
+    pa: 'pa-IN'
+  };
+  const locale = localeMap[state.language] || 'en-US';
+  try {
+    return date.toLocaleDateString(locale, { weekday: 'short' });
+  } catch (_) {
+    return date.toLocaleDateString([], { weekday: 'short' });
+  }
 }
 
 /* =========================================

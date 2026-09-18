@@ -1,4 +1,4 @@
-# WeatherGPT
+# RituGPT
 
 Standalone Node.js weather app for Vercel: Open-Meteo for weather, Google Gemini for chat (with a local advisory fallback).
 

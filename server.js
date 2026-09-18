@@ -72,16 +72,46 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // Static files
+  // Static files with security checks
   let relativePath = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
-  const filePath = path.join(__dirname, relativePath);
+  const resolvedBase = path.resolve(__dirname);
+  const resolvedPath = path.resolve(__dirname, relativePath);
 
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-    const ext = path.extname(filePath).toLowerCase();
-    const contentType = mimeTypes[ext] || 'application/octet-stream';
+  // Deny directory traversal outside base directory
+  if (!resolvedPath.startsWith(resolvedBase)) {
+    res.statusCode = 403;
+    res.setHeader('Content-Type', 'text/plain');
+    return res.end('403 Forbidden');
+  }
+
+  // Deny dotfiles (.env, .git, etc.) and internal project metadata
+  const pathParts = relativePath.split(/[/\\]/);
+  if (pathParts.some((part) => part.startsWith('.'))) {
+    res.statusCode = 404;
+    res.setHeader('Content-Type', 'text/plain');
+    return res.end('404 Not Found');
+  }
+
+  const baseFileName = path.basename(resolvedPath).toLowerCase();
+  if (['package.json', 'package-lock.json', 'vercel.json', 'readme.md'].includes(baseFileName)) {
+    res.statusCode = 404;
+    res.setHeader('Content-Type', 'text/plain');
+    return res.end('404 Not Found');
+  }
+
+  const ext = path.extname(resolvedPath).toLowerCase();
+  // Only serve allowed web file types
+  if (!mimeTypes[ext]) {
+    res.statusCode = 404;
+    res.setHeader('Content-Type', 'text/plain');
+    return res.end('404 Not Found');
+  }
+
+  if (fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).isFile()) {
+    const contentType = mimeTypes[ext];
     res.statusCode = 200;
     res.setHeader('Content-Type', contentType);
-    return fs.createReadStream(filePath).pipe(res);
+    return fs.createReadStream(resolvedPath).pipe(res);
   }
 
   res.statusCode = 404;
@@ -91,5 +121,5 @@ const server = http.createServer(async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`\n\x1b[32m🚀 WeatherGPT local server running at:\x1b[0m http://localhost:${PORT}\n`);
+  console.log(`\n\x1b[32m🚀 RituGPT local server running at:\x1b[0m http://localhost:${PORT}\n`);
 });

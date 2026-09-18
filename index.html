@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WeatherGPT — Grounded Conversational Weather Intelligence</title>
+  <title>RituGPT — Grounded Conversational Weather Intelligence</title>
   <meta name="description" content="AI-powered conversational weather assistant grounded in real Open-Meteo data." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -47,7 +47,7 @@
           <svg class="svg-icon logo-icon" viewBox="0 0 24 24"><path d="M12 2v2M4.93 4.93l1.41 1.41M20 12h2M19.07 4.93l-1.41 1.41M15.5 17h1a4.5 4.5 0 0 0 0-9 4.3 4.3 0 0 0-2.6.9A5 5 0 0 0 4.5 14a4 4 0 0 0 3.5 3h7.5"/></svg>
         </span>
         <div>
-          <h1>WeatherGPT</h1>
+          <h1>RituGPT</h1>
           <p class="tagline" id="txt-tagline">Ask the weather anything.</p>
         </div>
       </div>
@@ -83,7 +83,22 @@
 
         <button type="button" id="toggleGptBtn" class="gpt-toggle-btn" aria-expanded="false" aria-controls="gptSidebar">
           <svg class="svg-icon btn-sparkle" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
-          <span id="txt-gpt-btn">Ask WeatherGPT</span>
+          <span id="txt-gpt-btn">Ask RituGPT</span>
+        </button>
+
+        <button type="button" id="nav-ai-btn" class="gpt-toggle-btn nav-hero-btn" title="Jump to Multi-Model Ensemble & Decision Engine">
+          <svg class="svg-icon btn-sparkle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
+          <span id="txt-nav-ai-btn">AI Analysis</span>
+        </button>
+
+        <button type="button" id="nav-aqi-btn" class="gpt-toggle-btn nav-hero-btn" title="Jump to Air Quality Index">
+          <svg class="svg-icon btn-sparkle" viewBox="0 0 24 24"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 14 16H2"/></svg>
+          <span id="txt-nav-aqi-btn">Air Quality</span>
+        </button>
+
+        <button type="button" id="nav-trends-btn" class="gpt-toggle-btn nav-hero-btn" title="Jump to Weather Trends & Analytics">
+          <svg class="svg-icon btn-sparkle" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+          <span id="txt-nav-trends-btn">Weather Trends</span>
         </button>
       </div>
     </header>
@@ -177,11 +192,11 @@
         </section>
 
         <!-- Air Quality Index (AQI) Intelligence Module -->
-        <section class="card secondary-card aqi-card">
+        <section id="aqi-section" class="card secondary-card aqi-card">
           <div class="card-header">
             <div class="header-title-flex">
               <svg class="svg-icon" viewBox="0 0 24 24"><path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 14 16H2"/></svg>
-              <h3>Air Quality Index (AQI)</h3>
+              <h3 id="txt-aqi-title">Air Quality Index (AQI)</h3>
             </div>
             <span id="aqi-badge" class="aqi-badge status-good">Good (US AQI)</span>
           </div>
@@ -215,7 +230,7 @@
               <span id="aqi-so2" class="pollutant-val">-- µg/m³</span>
             </div>
             <div class="pollutant-chip">
-              <span class="pollutant-name">Ozone (O₃)</span>
+              <span class="pollutant-name" id="lbl-pollutant-ozone">Ozone (O₃)</span>
               <span id="aqi-o3" class="pollutant-val">-- µg/m³</span>
             </div>
             <div class="pollutant-chip">
@@ -242,78 +257,91 @@
         </section>
 
         <!-- Multi-Model Forecast & Probable Decision Engine -->
-        <section class="card secondary-card multimodel-card">
+        <section id="multimodel-section" class="card secondary-card multimodel-card">
           <div class="card-header">
             <div class="header-title-flex">
               <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
-              <h3>Multi-Model Ensemble &amp; Decision Engine</h3>
+              <h3 id="txt-multimodel-title">Multi-Model Ensemble &amp; Decision Engine</h3>
             </div>
-            <span id="model-consensus-score" class="consensus-badge">Evaluating Consensus...</span>
+            <div class="multimodel-header-actions">
+              <button type="button" id="toggle-model-breakdown-btn" class="gpt-toggle-btn model-breakdown-toggle-btn" aria-expanded="false" aria-controls="model-breakdown-dropdown" title="Toggle model-wise meteorological breakdown">
+                <svg class="svg-icon btn-sparkle" viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                <span id="txt-model-breakdown-btn">Model-Wise Breakdown</span>
+                <svg class="svg-icon chevron-icon" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <span id="model-consensus-score" class="consensus-badge">Evaluating Consensus...</span>
+            </div>
           </div>
 
           <!-- Probable Decisions Grid -->
           <div class="decisions-container">
-            <h4 class="decisions-title">Probable AI Recommendations (Multi-Model Grounded)</h4>
+            <h4 class="decisions-title" id="txt-decisions-title">Probable AI Recommendations (Multi-Model Grounded)</h4>
             <div class="decisions-grid">
               <div class="decision-card" id="dec-card-fitness">
                 <div class="decision-icon">🏃</div>
                 <div class="decision-content">
-                  <div class="decision-label">Outdoor Fitness &amp; Sports</div>
+                  <div class="decision-label" id="lbl-dec-fitness">Outdoor Fitness &amp; Sports</div>
                   <div class="decision-val" id="dec-fitness">Evaluating...</div>
                 </div>
               </div>
               <div class="decision-card" id="dec-card-rain">
                 <div class="decision-icon">☔</div>
                 <div class="decision-content">
-                  <div class="decision-label">Rain Risk / Outdoor Event</div>
+                  <div class="decision-label" id="lbl-dec-rain">Rain Risk / Outdoor Event</div>
                   <div class="decision-val" id="dec-rain">Evaluating...</div>
                 </div>
               </div>
               <div class="decision-card" id="dec-card-laundry">
                 <div class="decision-icon">🧺</div>
                 <div class="decision-content">
-                  <div class="decision-label">Laundry &amp; Sun Drying</div>
+                  <div class="decision-label" id="lbl-dec-laundry">Laundry &amp; Sun Drying</div>
                   <div class="decision-val" id="dec-laundry">Evaluating...</div>
                 </div>
               </div>
               <div class="decision-card" id="dec-card-mask">
                 <div class="decision-icon">😷</div>
                 <div class="decision-content">
-                  <div class="decision-label">Health &amp; Pollution Action</div>
+                  <div class="decision-label" id="lbl-dec-mask">Health &amp; Pollution Action</div>
                   <div class="decision-val" id="dec-mask">Evaluating...</div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Probable Synthesized Model Forecast Summary -->
-          <div class="probable-summary-box">
-            <div class="probable-item">
-              <span class="probable-label">Probable Max Temp</span>
-              <span id="probable-temp" class="probable-val">--°C</span>
+          <!-- Collapsible Model-Wise Breakdown Dropdown Drawer -->
+          <div id="model-breakdown-dropdown" class="model-breakdown-dropdown hidden">
+            <!-- Probable Synthesized Model Forecast Summary -->
+            <div class="probable-summary-box">
+              <div class="probable-item">
+                <span class="probable-label" id="lbl-probable-temp">Probable Max Temp</span>
+                <span id="probable-temp" class="probable-val">--°C</span>
+              </div>
+              <div class="probable-item">
+                <span class="probable-label" id="lbl-probable-spread">Model Variance / Spread</span>
+                <span id="probable-spread" class="probable-val">±--°C</span>
+              </div>
+              <div class="probable-item">
+                <span class="probable-label" id="lbl-probable-precip">Probable Rain Sum</span>
+                <span id="probable-precip" class="probable-val">-- mm</span>
+              </div>
+              <div class="probable-item">
+                <span class="probable-label" id="lbl-probable-agreement">Rain Model Consensus</span>
+                <span id="probable-agreement" class="probable-val">--%</span>
+              </div>
             </div>
-            <div class="probable-item">
-              <span class="probable-label">Model Variance / Spread</span>
-              <span id="probable-spread" class="probable-val">±--°C</span>
-            </div>
-            <div class="probable-item">
-              <span class="probable-label">Probable Rain Sum</span>
-              <span id="probable-precip" class="probable-val">-- mm</span>
-            </div>
-            <div class="probable-item">
-              <span class="probable-label">Rain Model Consensus</span>
-              <span id="probable-agreement" class="probable-val">--%</span>
-            </div>
-          </div>
 
-          <!-- Model Comparison Grid -->
-          <div class="model-comparison-wrapper">
-            <h4 class="decisions-title">Live Individual Meteorological Model Breakdown (IMD, NOAA GFS, ECMWF, ICON, GEM, ARPEGE)</h4>
-            <div id="multimodel-container" class="multimodel-grid"></div>
+            <!-- Model Comparison Horizontal Tile Rail -->
+            <div class="model-comparison-wrapper">
+              <div class="model-comparison-header">
+                <h4 class="decisions-title" id="txt-breakdown-title">Live Individual Meteorological Model Breakdown (IMD, NOAA GFS, ECMWF, ICON, GEM, ARPEGE)</h4>
+                <span class="scroll-hint-pill">Horizontal Tiles ➔</span>
+              </div>
+              <div id="multimodel-container" class="multimodel-horizontal-rail"></div>
+            </div>
           </div>
         </section>
 
-        <section class="card secondary-card">
+        <section id="trends-section" class="card secondary-card">
           <div class="card-header">
             <h3 id="txt-trends-title">Weather Trends &amp; Analytics</h3>
           </div>
@@ -340,7 +368,7 @@
           <svg class="svg-icon" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
         </div>
         <div>
-          <h2>Ask WeatherGPT</h2>
+          <h2 id="txt-chat-header-title">Ask RituGPT</h2>
           <span class="ai-badge">
             <svg class="svg-icon badge-icon" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
             Grounded AI Engine

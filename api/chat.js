@@ -33,7 +33,7 @@ function detectLanguageFromText(text) {
 
 function getSystemPrompt(language = 'en') {
   const langName = LANGUAGE_NAMES[language] || 'English';
-  let prompt = `You are WeatherGPT, an intelligent, conversational weather assistant powered by AI.
+  let prompt = `You are RituGPT, an intelligent, conversational weather assistant powered by AI.
 You provide detailed, insightful, and natural weather explanations, recommendations, clothing advice, outdoor activity planning, and agricultural insights based on the provided weather data.
 Be concise, warm, knowledgeable, and helpful. Use Celsius by default. Do not invent weather data outside the source of truth provided.`;
 
@@ -180,10 +180,15 @@ async function streamGemini(apiKey, userMessage, conversation, weatherContext, l
     contents.push({ role: 'user', parts: [{ text: userMessage }] });
   }
 
-  const primaryModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-  const fallbackModels = [primaryModel, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].filter(
-    (m, idx, arr) => arr.indexOf(m) === idx
-  );
+  const primaryModel = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+  const fallbackModels = [
+    primaryModel,
+    'gemini-3.6-flash',
+    'gemini-3.7-flash',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash'
+  ].filter((m, idx, arr) => arr.indexOf(m) === idx);
 
   let lastError = null;
   const systemInstructionText = `${getSystemPrompt(language)}\n\nWeather data (source of truth):\n${JSON.stringify(weatherContext, null, 2)}`;
@@ -366,15 +371,25 @@ module.exports = async function handler(req, res) {
     }
 
     await streamGemini(apiKey, message, conversation, weatherContext, language, res);
+    try {
+      await streamGemini(apiKey, message, conversation, weatherContext, language, res);
+    } catch (geminiError) {
+      console.warn('Gemini stream failed or rate-limited, engaging fail-safe local advisor:', geminiError.message);
+      if (!res.headersSent) {
+        const advisory = buildLocalAdvisory(message, location, snapshot, language);
+        return streamText(res, advisory);
+      }
+      throw geminiError;
+    }
   } catch (error) {
     console.error('Chat handler error:', error);
     if (!res.headersSent) {
       return sendJson(res, 502, {
         success: false,
-        error: 'WeatherGPT is having trouble responding right now. Please try again shortly.'
+        error: 'RituGPT is having trouble responding right now. Please try again shortly.'
       });
     } else {
-      res.write(`data: ${JSON.stringify({ error: 'WeatherGPT encountered an error while streaming.' })}\n\n`);
+      res.write(`data: ${JSON.stringify({ error: 'RituGPT encountered an error while streaming.' })}\n\n`);
       res.end();
     }
   }
